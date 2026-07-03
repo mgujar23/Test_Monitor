@@ -1,0 +1,8 @@
+{
+  "example_test.py": {
+    "suggested_fix": "Example fix: update selector XPath from old to new",
+    "added_date": "2026-07-02",
+    "fixed_by": "minal.gujar",
+    "status": "pending"
+  }
+}
