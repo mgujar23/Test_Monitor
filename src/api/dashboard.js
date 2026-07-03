@@ -1,64 +1,84 @@
-const JenkinsClient = require('./jenkins');
-const SeleniumClient = require('./selenium');
-const GitClient = require('./git');
-const { aggregateSectionData, loadFixesFile, getFixForTest } = require('./utils');
+import { fetchReadyClusterTests, fetchIntegrationTests, fetchSmokeTests } from './jenkins.js';
+import { fetchSeleniumTests } from './selenium.js';
+import { fetchNewTestsAdded } from './git.js';
+import { aggregateSectionData, formatTimestamp, loadFixesFile } from './utils.js';
 
-class DashboardAggregator {
-  constructor(config) {
-    this.config = config;
-    this.jenkinsClient = new JenkinsClient(config.jenkins.url);
-    this.seleniumClient = new SeleniumClient(config.selenium.url);
-    this.gitClient = new GitClient(config.git.repoPath, config.git.branch);
-    this.fixes = loadFixesFile(config.fixesFilePath);
-  }
+export async function aggregateDashboardData(config) {
+  const startTime = Date.now();
+  const results = {
+    timestamp: formatTimestamp(),
+    sections: {
+      readyCluster: { total: 0, failed: 0, stale: 0, areas: [] },
+      selenium: { total: 0, failed: 0, stale: 0, areas: [] },
+      integrationTests: { total: 0, failed: 0, stale: 0, areas: [] },
+      smokeTests: { total: 0, failed: 0, stale: 0, areas: [] },
+      newTestsAdded: { yearly: [] }
+    },
+    lastError: null,
+    refreshDurationMs: 0
+  };
 
-  async aggregateDashboardData() {
-    const startTime = Date.now();
+  try {
+    // Fetch from all sources in parallel
+    const [readyCluster, selenium, integration, smoke, newTests] = await Promise.allSettled([
+      fetchReadyClusterTests(config),
+      fetchSeleniumTests(config.selenium.portalUrl),
+      fetchIntegrationTests(config),
+      fetchSmokeTests(config),
+      fetchNewTestsAdded(
+        config.git.repoPath,
+        config.git.branch,
+        config.git.testFilePatterns
+      )
+    ]);
 
-    try {
-      const results = await Promise.allSettled([
-        this.jenkinsClient.fetchJobStatus(),
-        this.seleniumClient.fetchTestResults(),
-        this.gitClient.fetchNewTestsAddedYearly(),
-      ]);
-
-      const [jenkinsResult, seleniumResult, gitResult] = results;
-
-      const dashboardData = {
-        timestamp: new Date().toISOString(),
-        jenkins: jenkinsResult.status === 'fulfilled' ? jenkinsResult.value : { jobs: [] },
-        selenium: seleniumResult.status === 'fulfilled' ? seleniumResult.value : { total: 0, failed: 0, stale: 0, areas: [] },
-        git: gitResult.status === 'fulfilled' ? gitResult.value : { yearly: [] },
-        fixes: this.fixes,
-        executionTimeMs: Date.now() - startTime,
-      };
-
-      // Merge fixes with test results
-      if (dashboardData.selenium.areas) {
-        dashboardData.selenium.areas.forEach(area => {
-          if (area.tests) {
-            area.tests = area.tests.map(test => ({
-              ...test,
-              fix: getFixForTest(this.fixes, test.name),
-            }));
-          }
-        });
-      }
-
-      return dashboardData;
-    } catch (error) {
-      console.error('Error aggregating dashboard data:', error);
-      return {
-        timestamp: new Date().toISOString(),
-        jenkins: { jobs: [] },
-        selenium: { total: 0, failed: 0, stale: 0, areas: [] },
-        git: { yearly: [] },
-        fixes: this.fixes,
-        error: error.message,
-        executionTimeMs: Date.now() - startTime,
-      };
+    // Process results
+    if (readyCluster.status === 'fulfilled') {
+      results.sections.readyCluster = aggregateSectionData('readyCluster', readyCluster.value);
+    } else {
+      console.error('Ready Cluster fetch failed:', readyCluster.reason);
     }
-  }
-}
 
-module.exports = DashboardAggregator;
+    if (selenium.status === 'fulfilled') {
+      results.sections.selenium = aggregateSectionData('selenium', selenium.value);
+    } else {
+      console.error('Selenium fetch failed:', selenium.reason);
+    }
+
+    if (integration.status === 'fulfilled') {
+      results.sections.integrationTests = aggregateSectionData('integrationTests', integration.value);
+    } else {
+      console.error('Integration Tests fetch failed:', integration.reason);
+    }
+
+    if (smoke.status === 'fulfilled') {
+      results.sections.smokeTests = aggregateSectionData('smokeTests', smoke.value);
+    } else {
+      console.error('Smoke Tests fetch failed:', smoke.reason);
+    }
+
+    if (newTests.status === 'fulfilled') {
+      results.sections.newTestsAdded = newTests.value;
+    } else {
+      console.error('New Tests Added fetch failed:', newTests.reason);
+    }
+
+    // Log warnings for high failure counts
+    const totalFailed = Object.values(results.sections).reduce((sum, section) => {
+      return sum + (section.failed || 0);
+    }, 0);
+
+    if (totalFailed > 500) {
+      console.warn(`⚠️  High failure count detected: ${totalFailed} total failures`);
+    }
+
+  } catch (error) {
+    console.error('Fatal error aggregating dashboard data:', error.message);
+    results.lastError = error.message;
+  } finally {
+    results.refreshDurationMs = Date.now() - startTime;
+    console.log(`Dashboard refresh completed in ${results.refreshDurationMs}ms`);
+  }
+
+  return results;
+}
