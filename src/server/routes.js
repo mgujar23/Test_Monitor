@@ -1,41 +1,140 @@
 import express from 'express';
+import { loadCache } from './cache.js';
+import { getTestDetails } from '../api/test-details.js';
+import { getHealthStatus, performRefresh } from './jobs.js';
 
 export default function routes(config) {
   const router = express.Router();
 
-  // Dashboard endpoint - returns full cached data
+  // Task 11: Dashboard endpoint - returns full cached data
   router.get('/dashboard', (req, res) => {
-    res.json({
-      message: 'Dashboard endpoint - will implement in Task 11'
-    });
+    try {
+      const cachedData = loadCache();
+      if (!cachedData) {
+        return res.status(503).json({
+          error: 'Cache not available',
+          message: 'Dashboard data is being initialized. Please try again in a moment.'
+        });
+      }
+      res.json(cachedData);
+    } catch (error) {
+      console.error('[Routes] Error loading dashboard:', error);
+      res.status(500).json({
+        error: 'Failed to load dashboard data',
+        message: error.message
+      });
+    }
   });
 
-  // Failed tests for a section
+  // Task 12: Failed tests for a section
   router.get('/failed-tests/:section', (req, res) => {
-    res.json({
-      message: 'Failed tests endpoint - will implement in Task 12'
-    });
+    try {
+      const { section } = req.params;
+      const cachedData = loadCache();
+
+      if (!cachedData) {
+        return res.status(503).json({
+          error: 'Cache not available',
+          section
+        });
+      }
+
+      // Extract failures from the specified section
+      const sectionData = cachedData.sections?.[section] || [];
+      const failures = [];
+      let totalFailed = 0;
+
+      if (Array.isArray(sectionData)) {
+        sectionData.forEach(item => {
+          if (item.failed === 1 || item.status === 'FAILED') {
+            failures.push({
+              name: item.name || 'Unknown',
+              area: item.area || 'Unknown',
+              status: item.status || 'FAILED',
+              className: item.className || '',
+              duration: item.duration || 0,
+              lastRun: item.lastRun || null
+            });
+            totalFailed++;
+          }
+        });
+      }
+
+      res.json({
+        section,
+        totalFailed,
+        failures
+      });
+    } catch (error) {
+      console.error('[Routes] Error fetching failed tests:', error);
+      res.status(500).json({
+        error: 'Failed to fetch failed tests',
+        message: error.message
+      });
+    }
   });
 
-  // Test details
+  // Task 13: Test details
   router.get('/test-details/:testId', (req, res) => {
-    res.json({
-      message: 'Test details endpoint - will implement in Task 13'
-    });
+    try {
+      const { testId } = req.params;
+      const cachedData = loadCache();
+
+      if (!cachedData) {
+        return res.status(503).json({
+          error: 'Cache not available',
+          testId
+        });
+      }
+
+      const testDetails = getTestDetails(testId, cachedData);
+
+      if (!testDetails) {
+        return res.status(404).json({
+          error: 'Test not found',
+          testId
+        });
+      }
+
+      res.json(testDetails);
+    } catch (error) {
+      console.error('[Routes] Error fetching test details:', error);
+      res.status(500).json({
+        error: 'Failed to fetch test details',
+        message: error.message
+      });
+    }
   });
 
-  // Health check
+  // Task 14: Health check
   router.get('/health', (req, res) => {
-    res.json({
-      message: 'Health endpoint - will implement in Task 14'
-    });
+    try {
+      const health = getHealthStatus();
+      res.json(health);
+    } catch (error) {
+      console.error('[Routes] Error getting health status:', error);
+      res.status(500).json({
+        error: 'Failed to get health status',
+        message: error.message
+      });
+    }
   });
 
-  // Manual refresh trigger
+  // Task 14: Manual refresh trigger
   router.post('/refresh', (req, res) => {
-    res.json({
-      message: 'Manual refresh - will implement in Task 15'
-    });
+    try {
+      performRefresh(config);
+      res.json({
+        message: 'Refresh triggered successfully',
+        status: 'in-progress'
+      });
+    } catch (error) {
+      console.error('[Routes] Error triggering refresh:', error);
+      res.status(500).json({
+        error: 'Failed to trigger refresh',
+        message: error.message
+      });
+    }
   });
 
   return router;
