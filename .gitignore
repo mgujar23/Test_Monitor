@@ -1,0 +1,11 @@
+node_modules/
+package-lock.json
+config.json
+logs/
+.env
+.env.local
+.DS_Store
+*.log
+cache/dashboard-data.json
+dist/
+.vite/
