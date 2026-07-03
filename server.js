@@ -7,6 +7,7 @@ import { fileURLToPath } from 'url';
 import routes from './src/server/routes.js';
 import { errorHandler, logRequest } from './src/server/middleware.js';
 import { initBackgroundJob } from './src/server/jobs.js';
+import { initializeCache } from './src/server/cache.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -27,6 +28,9 @@ const PORT = config.app.port || 3000;
 app.use(cors());
 app.use(bodyParser.json());
 app.use(logRequest);
+
+// Initialize cache
+initializeCache();
 
 // Routes
 app.use('/api', routes(config));
