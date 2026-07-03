@@ -2,21 +2,30 @@ import express from 'express';
 import { loadCache } from './cache.js';
 import { getTestDetails } from '../api/test-details.js';
 import { getHealthStatus, performRefresh } from './jobs.js';
+import { generateMockDashboardData } from './mock-data.js';
 
 export default function routes(config) {
   const router = express.Router();
+  const DEMO_MODE = process.env.DEMO_MODE === 'true';
 
-  // Task 11: Dashboard endpoint - returns full cached data
+  // Task 11: Dashboard endpoint - returns full cached data or mock data if DEMO_MODE
   router.get('/dashboard', (req, res) => {
     try {
-      const cachedData = loadCache();
-      if (!cachedData) {
-        return res.status(503).json({
-          error: 'Cache not available',
-          message: 'Dashboard data is being initialized. Please try again in a moment.'
-        });
+      let dashboardData;
+
+      if (DEMO_MODE) {
+        dashboardData = generateMockDashboardData();
+        console.log('[Routes] Serving mock dashboard data (DEMO_MODE enabled)');
+      } else {
+        dashboardData = loadCache();
+        if (!dashboardData) {
+          return res.status(503).json({
+            error: 'Cache not available',
+            message: 'Dashboard data is being initialized. Please try again in a moment.'
+          });
+        }
       }
-      res.json(cachedData);
+      res.json(dashboardData);
     } catch (error) {
       console.error('[Routes] Error loading dashboard:', error);
       res.status(500).json({

@@ -24,6 +24,14 @@ try {
 const app = express();
 const PORT = config.app.port || 3000;
 
+// Check for demo mode
+const DEMO_MODE = process.env.DEMO_MODE === 'true';
+if (DEMO_MODE) {
+  console.warn('\n⚠️  DEMO MODE ENABLED');
+  console.warn('   Dashboard is serving mock data, not real test results');
+  console.warn('   To disable: unset DEMO_MODE environment variable\n');
+}
+
 // Middleware
 app.use(cors());
 app.use(bodyParser.json());
