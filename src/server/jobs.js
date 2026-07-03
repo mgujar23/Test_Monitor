@@ -31,12 +31,11 @@ export async function performRefresh(config) {
   try {
     console.log('[Jobs] Starting dashboard data refresh...');
 
-    // Dynamically import DashboardAggregator (handles CommonJS interop)
-    const { default: DashboardAggregator } = await import('../api/dashboard.js');
+    // Import aggregation function
+    const { aggregateDashboardData } = await import('../api/dashboard.js');
 
-    // Create aggregator and fetch data
-    const aggregator = new DashboardAggregator(config);
-    const dashboardData = await aggregator.aggregateDashboardData();
+    // Fetch aggregated data
+    const dashboardData = await aggregateDashboardData(config);
 
     // Add refresh metadata
     const dataWithMetadata = {

@@ -1,7 +1,7 @@
 {
   "jenkins": {
     "baseUrl": "https://jenkins.infra-dev.forcepoint.net",
-    "apiToken": "YOUR_JENKINS_API_TOKEN_HERE",
+    "apiToken": "112e75377a8024af1e0a8fa80955cb4a5e",
     "jobs": {
       "readyCluster": "/job/Projects/job/Test/job/ReadyCluster/",
       "integrationTests": "/job/Projects/job/Test/job/IntegrationTests/",
@@ -20,6 +20,12 @@
       "*Test.js",
       "*.test.ts"
     ]
+  },
+  "perforce": {
+    "serverUrl": "https://perforce.cicd.cloud.fpdev.io:1666",
+    "username": "mgujar",
+    "password": "Minal123!",
+    "depotPath": "//code_SaaS/csg_service/portal_ui/dev/portal/tests/selenium/portal_tests"
   },
   "app": {
     "port": 3000,

@@ -1,7 +1,8 @@
 import { fetchReadyClusterTests, fetchIntegrationTests, fetchSmokeTests } from './jenkins.js';
 import { fetchSeleniumTests } from './selenium.js';
-import { fetchNewTestsAdded } from './git.js';
+import { fetchNewTestsAdded } from './perforce.js';
 import { aggregateSectionData, formatTimestamp, loadFixesFile } from './utils.js';
+import { generateAIInsights } from './ai-insights.js';
 
 export async function aggregateDashboardData(config) {
   const startTime = Date.now();
@@ -14,6 +15,13 @@ export async function aggregateDashboardData(config) {
       smokeTests: { total: 0, failed: 0, stale: 0, areas: [] },
       newTestsAdded: { yearly: [] }
     },
+    aiInsights: {
+      healthScore: 0,
+      passRate: 0,
+      alerts: [],
+      flakyTests: [],
+      recommendations: []
+    },
     lastError: null,
     refreshDurationMs: 0
   };
@@ -25,11 +33,7 @@ export async function aggregateDashboardData(config) {
       fetchSeleniumTests(config.selenium.portalUrl),
       fetchIntegrationTests(config),
       fetchSmokeTests(config),
-      fetchNewTestsAdded(
-        config.git.repoPath,
-        config.git.branch,
-        config.git.testFilePatterns
-      )
+      fetchNewTestsAdded(config)
     ]);
 
     // Process results
@@ -71,6 +75,12 @@ export async function aggregateDashboardData(config) {
     if (totalFailed > 500) {
       console.warn(`⚠️  High failure count detected: ${totalFailed} total failures`);
     }
+
+    // Generate AI insights
+    console.log('[AI] Generating insights and recommendations...');
+    results.aiInsights = generateAIInsights(results);
+    console.log(`[AI] Health Score: ${results.aiInsights.healthScore}, Pass Rate: ${results.aiInsights.passRate}%`);
+    console.log(`[AI] Generated ${results.aiInsights.alerts.length} alerts and ${results.aiInsights.recommendations.length} recommendations`);
 
   } catch (error) {
     console.error('Fatal error aggregating dashboard data:', error.message);
