@@ -193,53 +193,70 @@ function getDefaultChanges() {
 function getIntegrationTestData(totalTestCount = 308187, failedTestCount = 813) {
   // Create granular areas with realistic test distribution
   const areaDistribution = [
-    { name: 'User Registration & Onboarding', percentage: 0.08, failed: 45 },
-    { name: 'Login & Session Management', percentage: 0.07, failed: 38 },
-    { name: 'Password & Account Recovery', percentage: 0.05, failed: 22 },
-    { name: 'Role-Based Access Control', percentage: 0.04, failed: 15 },
-    { name: 'REST API Endpoints', percentage: 0.09, failed: 52 },
-    { name: 'Request Validation & Schema', percentage: 0.08, failed: 45 },
-    { name: 'Response Formatting & Serialization', percentage: 0.06, failed: 28 },
-    { name: 'Error Handling & Status Codes', percentage: 0.05, failed: 22 },
-    { name: 'Rate Limiting & Throttling', percentage: 0.04, failed: 18 },
-    { name: 'CRUD Operations', percentage: 0.08, failed: 42 },
-    { name: 'Transaction Isolation & Locking', percentage: 0.06, failed: 32 },
-    { name: 'Query Optimization & Performance', percentage: 0.05, failed: 18 },
-    { name: 'Data Indexing & Searching', percentage: 0.04, failed: 12 },
-    { name: 'Service Discovery & Registration', percentage: 0.05, failed: 22 },
-    { name: 'Message Queue & Event Processing', percentage: 0.06, failed: 32 },
-    { name: 'Circuit Breaker & Resilience', percentage: 0.04, failed: 15 },
-    { name: 'Retry Logic & Backoff Strategies', percentage: 0.03, failed: 10 },
-    { name: 'Distributed Cache Management', percentage: 0.05, failed: 28 },
-    { name: 'Memory Optimization & Pooling', percentage: 0.04, failed: 18 },
-    { name: 'Latency & Performance Benchmarks', percentage: 0.03, failed: 12 },
-    { name: 'SQL Injection & XSS Prevention', percentage: 0.04, failed: 0 },
-    { name: 'Encryption & Data Protection', percentage: 0.03, failed: 0 },
-    { name: 'Audit Logging & Compliance', percentage: 0.02, failed: 0 },
-    { name: 'Concurrent User Load Testing', percentage: 0.06, failed: 35 },
-    { name: 'Memory Leak Detection & Profiling', percentage: 0.04, failed: 22 },
-    { name: 'Database Throughput & Scaling', percentage: 0.05, failed: 28 },
-    { name: 'Data Consistency Verification', percentage: 0.05, failed: 28 },
-    { name: 'Disaster Recovery & Backup', percentage: 0.03, failed: 12 },
-    { name: 'Failover & High Availability', percentage: 0.03, failed: 12 },
-    { name: 'Null & Boundary Value Handling', percentage: 0.03, failed: 18 },
-    { name: 'Large Dataset & Collection Handling', percentage: 0.02, failed: 10 },
-    { name: 'Malformed Input & Invalid Data', percentage: 0.02, failed: 8 }
+    { name: 'User Registration & Onboarding', percentage: 0.08, failedPercentage: 0.055 },
+    { name: 'Login & Session Management', percentage: 0.07, failedPercentage: 0.047 },
+    { name: 'Password & Account Recovery', percentage: 0.05, failedPercentage: 0.027 },
+    { name: 'Role-Based Access Control', percentage: 0.04, failedPercentage: 0.018 },
+    { name: 'REST API Endpoints', percentage: 0.09, failedPercentage: 0.064 },
+    { name: 'Request Validation & Schema', percentage: 0.08, failedPercentage: 0.055 },
+    { name: 'Response Formatting & Serialization', percentage: 0.06, failedPercentage: 0.034 },
+    { name: 'Error Handling & Status Codes', percentage: 0.05, failedPercentage: 0.027 },
+    { name: 'Rate Limiting & Throttling', percentage: 0.04, failedPercentage: 0.022 },
+    { name: 'CRUD Operations', percentage: 0.08, failedPercentage: 0.052 },
+    { name: 'Transaction Isolation & Locking', percentage: 0.06, failedPercentage: 0.039 },
+    { name: 'Query Optimization & Performance', percentage: 0.05, failedPercentage: 0.022 },
+    { name: 'Data Indexing & Searching', percentage: 0.04, failedPercentage: 0.015 },
+    { name: 'Service Discovery & Registration', percentage: 0.05, failedPercentage: 0.027 },
+    { name: 'Message Queue & Event Processing', percentage: 0.06, failedPercentage: 0.039 },
+    { name: 'Circuit Breaker & Resilience', percentage: 0.04, failedPercentage: 0.018 },
+    { name: 'Retry Logic & Backoff Strategies', percentage: 0.03, failedPercentage: 0.012 },
+    { name: 'Distributed Cache Management', percentage: 0.05, failedPercentage: 0.034 },
+    { name: 'Memory Optimization & Pooling', percentage: 0.04, failedPercentage: 0.022 },
+    { name: 'Latency & Performance Benchmarks', percentage: 0.03, failedPercentage: 0.015 },
+    { name: 'SQL Injection & XSS Prevention', percentage: 0.04, failedPercentage: 0.0 },
+    { name: 'Encryption & Data Protection', percentage: 0.03, failedPercentage: 0.0 },
+    { name: 'Audit Logging & Compliance', percentage: 0.02, failedPercentage: 0.0 },
+    { name: 'Concurrent User Load Testing', percentage: 0.06, failedPercentage: 0.043 },
+    { name: 'Memory Leak Detection & Profiling', percentage: 0.04, failedPercentage: 0.027 },
+    { name: 'Database Throughput & Scaling', percentage: 0.05, failedPercentage: 0.034 },
+    { name: 'Data Consistency Verification', percentage: 0.05, failedPercentage: 0.034 },
+    { name: 'Disaster Recovery & Backup', percentage: 0.03, failedPercentage: 0.015 },
+    { name: 'Failover & High Availability', percentage: 0.03, failedPercentage: 0.015 },
+    { name: 'Null & Boundary Value Handling', percentage: 0.03, failedPercentage: 0.022 },
+    { name: 'Large Dataset & Collection Handling', percentage: 0.02, failedPercentage: 0.012 },
+    { name: 'Malformed Input & Invalid Data', percentage: 0.02, failedPercentage: 0.010 }
   ];
 
-  const areas = areaDistribution.map(area => ({
-    name: area.name,
-    total: Math.round(totalTestCount * area.percentage),
-    failed: area.failed,
-    stale: 0,
-    tests: [
-      { filename: `test_${area.name.toLowerCase().replace(/\s+/g, '_')}_1.py`, status: area.failed > 0 ? 'FAIL' : 'PASS', lastPassed: area.failed > 0 ? 'Build #530' : 'Build #534', recentChanges: area.failed > 0 ? 'Investigation ongoing' : 'Passing consistently', suggestedFix: area.failed > 0 ? 'Review test failure logs' : 'N/A' },
-      { filename: `test_${area.name.toLowerCase().replace(/\s+/g, '_')}_2.py`, status: 'PASS', lastPassed: 'Build #534', recentChanges: 'Core functionality', suggestedFix: 'N/A' },
-      { filename: `test_${area.name.toLowerCase().replace(/\s+/g, '_')}_3.py`, status: 'PASS', lastPassed: 'Build #534', recentChanges: 'Enhanced coverage', suggestedFix: 'N/A' },
-      { filename: `test_${area.name.toLowerCase().replace(/\s+/g, '_')}_4.py`, status: 'PASS', lastPassed: 'Build #534', recentChanges: 'Edge case handling', suggestedFix: 'N/A' },
-      { filename: `test_${area.name.toLowerCase().replace(/\s+/g, '_')}_5.py`, status: 'PASS', lastPassed: 'Build #534', recentChanges: 'Integration verified', suggestedFix: 'N/A' }
-    ]
-  }));
+  let summedTotal = 0;
+  let summedFailed = 0;
+
+  const areas = areaDistribution.map((area, idx) => {
+    let total = Math.round(totalTestCount * area.percentage);
+    let failed = Math.round(failedTestCount * area.failedPercentage);
+
+    // Adjust last area to ensure exact sum
+    if (idx === areaDistribution.length - 1) {
+      total = totalTestCount - summedTotal;
+      failed = failedTestCount - summedFailed;
+    } else {
+      summedTotal += total;
+      summedFailed += failed;
+    }
+
+    return {
+      name: area.name,
+      total: total,
+      failed: failed,
+      stale: 0,
+      tests: [
+        { filename: `test_${area.name.toLowerCase().replace(/\s+/g, '_')}_1.py`, status: failed > 0 ? 'FAIL' : 'PASS', lastPassed: failed > 0 ? 'Build #530' : 'Build #534', recentChanges: failed > 0 ? 'Investigation ongoing' : 'Passing consistently', suggestedFix: failed > 0 ? 'Review test failure logs' : 'N/A' },
+        { filename: `test_${area.name.toLowerCase().replace(/\s+/g, '_')}_2.py`, status: 'PASS', lastPassed: 'Build #534', recentChanges: 'Core functionality', suggestedFix: 'N/A' },
+        { filename: `test_${area.name.toLowerCase().replace(/\s+/g, '_')}_3.py`, status: 'PASS', lastPassed: 'Build #534', recentChanges: 'Enhanced coverage', suggestedFix: 'N/A' },
+        { filename: `test_${area.name.toLowerCase().replace(/\s+/g, '_')}_4.py`, status: 'PASS', lastPassed: 'Build #534', recentChanges: 'Edge case handling', suggestedFix: 'N/A' },
+        { filename: `test_${area.name.toLowerCase().replace(/\s+/g, '_')}_5.py`, status: 'PASS', lastPassed: 'Build #534', recentChanges: 'Integration verified', suggestedFix: 'N/A' }
+      ]
+    };
+  });
 
   return {
     total: totalTestCount,
@@ -364,41 +381,58 @@ export async function fetchIntegrationTests(config) {
 function getSmokeTestData(totalTestCount = 85, failedTestCount = 4) {
   // Define granular area distribution for smoke tests
   const areaDistribution = [
-    { name: 'Application Startup & Bootstrap', percentage: 0.08, failed: 0 },
-    { name: 'Dependency Injection & Configuration', percentage: 0.07, failed: 0 },
-    { name: 'Environment Variables & Secrets', percentage: 0.06, failed: 0 },
-    { name: 'Database Connection Pooling', percentage: 0.06, failed: 1 },
-    { name: 'Redis Cache Connectivity', percentage: 0.05, failed: 0 },
-    { name: 'Message Queue Connectivity', percentage: 0.05, failed: 1 },
-    { name: 'Core API Health Check', percentage: 0.07, failed: 0 },
-    { name: 'Authentication Service Status', percentage: 0.06, failed: 1 },
-    { name: 'Authorization & Permissions', percentage: 0.05, failed: 0 },
-    { name: 'SSL/TLS Certificate Validation', percentage: 0.06, failed: 0 },
-    { name: 'HTTPS Endpoint Verification', percentage: 0.05, failed: 1 },
-    { name: 'Security Headers & Policies', percentage: 0.04, failed: 0 },
-    { name: 'Logging System Health', percentage: 0.06, failed: 0 },
-    { name: 'Metrics & Monitoring Collection', percentage: 0.05, failed: 0 },
-    { name: 'Health Check Endpoint', percentage: 0.04, failed: 0 },
-    { name: 'Data Validation Rules', percentage: 0.05, failed: 0 },
-    { name: 'Data Integrity Checks', percentage: 0.04, failed: 0 },
-    { name: 'External API Connectivity', percentage: 0.04, failed: 0 },
-    { name: 'Third-Party Service Status', percentage: 0.03, failed: 0 },
-    { name: 'Webhook Integration Points', percentage: 0.02, failed: 0 }
+    { name: 'Application Startup & Bootstrap', percentage: 0.08, failedPercentage: 0.0 },
+    { name: 'Dependency Injection & Configuration', percentage: 0.07, failedPercentage: 0.0 },
+    { name: 'Environment Variables & Secrets', percentage: 0.06, failedPercentage: 0.0 },
+    { name: 'Database Connection Pooling', percentage: 0.06, failedPercentage: 0.25 },
+    { name: 'Redis Cache Connectivity', percentage: 0.05, failedPercentage: 0.0 },
+    { name: 'Message Queue Connectivity', percentage: 0.05, failedPercentage: 0.25 },
+    { name: 'Core API Health Check', percentage: 0.07, failedPercentage: 0.0 },
+    { name: 'Authentication Service Status', percentage: 0.06, failedPercentage: 0.25 },
+    { name: 'Authorization & Permissions', percentage: 0.05, failedPercentage: 0.0 },
+    { name: 'SSL/TLS Certificate Validation', percentage: 0.06, failedPercentage: 0.0 },
+    { name: 'HTTPS Endpoint Verification', percentage: 0.05, failedPercentage: 0.25 },
+    { name: 'Security Headers & Policies', percentage: 0.04, failedPercentage: 0.0 },
+    { name: 'Logging System Health', percentage: 0.06, failedPercentage: 0.0 },
+    { name: 'Metrics & Monitoring Collection', percentage: 0.05, failedPercentage: 0.0 },
+    { name: 'Health Check Endpoint', percentage: 0.04, failedPercentage: 0.0 },
+    { name: 'Data Validation Rules', percentage: 0.05, failedPercentage: 0.0 },
+    { name: 'Data Integrity Checks', percentage: 0.04, failedPercentage: 0.0 },
+    { name: 'External API Connectivity', percentage: 0.04, failedPercentage: 0.0 },
+    { name: 'Third-Party Service Status', percentage: 0.03, failedPercentage: 0.0 },
+    { name: 'Webhook Integration Points', percentage: 0.02, failedPercentage: 0.0 }
   ];
 
-  const areas = areaDistribution.map(area => ({
-    name: area.name,
-    total: Math.round(totalTestCount * area.percentage),
-    failed: area.failed,
-    stale: 0,
-    tests: [
-      { filename: `test_${area.name.toLowerCase().replace(/\s+/g, '_')}_1.py`, status: area.failed > 0 ? 'FAIL' : 'PASS', lastPassed: area.failed > 0 ? 'Build #6973' : 'Build #6975', recentChanges: area.failed > 0 ? 'Investigating failure' : 'Smoke test passing', suggestedFix: area.failed > 0 ? 'Check service health' : 'N/A' },
-      { filename: `test_${area.name.toLowerCase().replace(/\s+/g, '_')}_2.py`, status: 'PASS', lastPassed: 'Build #6975', recentChanges: 'Smoke check', suggestedFix: 'N/A' },
-      { filename: `test_${area.name.toLowerCase().replace(/\s+/g, '_')}_3.py`, status: 'PASS', lastPassed: 'Build #6975', recentChanges: 'System verification', suggestedFix: 'N/A' },
-      { filename: `test_${area.name.toLowerCase().replace(/\s+/g, '_')}_4.py`, status: 'PASS', lastPassed: 'Build #6975', recentChanges: 'Connectivity test', suggestedFix: 'N/A' },
-      { filename: `test_${area.name.toLowerCase().replace(/\s+/g, '_')}_5.py`, status: 'PASS', lastPassed: 'Build #6975', recentChanges: 'Verified online', suggestedFix: 'N/A' }
-    ]
-  }));
+  let summedTotal = 0;
+  let summedFailed = 0;
+
+  const areas = areaDistribution.map((area, idx) => {
+    let total = Math.round(totalTestCount * area.percentage);
+    let failed = Math.round(failedTestCount * area.failedPercentage);
+
+    // Adjust last area to ensure exact sum
+    if (idx === areaDistribution.length - 1) {
+      total = totalTestCount - summedTotal;
+      failed = failedTestCount - summedFailed;
+    } else {
+      summedTotal += total;
+      summedFailed += failed;
+    }
+
+    return {
+      name: area.name,
+      total: total,
+      failed: failed,
+      stale: 0,
+      tests: [
+        { filename: `test_${area.name.toLowerCase().replace(/\s+/g, '_')}_1.py`, status: failed > 0 ? 'FAIL' : 'PASS', lastPassed: failed > 0 ? 'Build #6973' : 'Build #6975', recentChanges: failed > 0 ? 'Investigating failure' : 'Smoke test passing', suggestedFix: failed > 0 ? 'Check service health' : 'N/A' },
+        { filename: `test_${area.name.toLowerCase().replace(/\s+/g, '_')}_2.py`, status: 'PASS', lastPassed: 'Build #6975', recentChanges: 'Smoke check', suggestedFix: 'N/A' },
+        { filename: `test_${area.name.toLowerCase().replace(/\s+/g, '_')}_3.py`, status: 'PASS', lastPassed: 'Build #6975', recentChanges: 'System verification', suggestedFix: 'N/A' },
+        { filename: `test_${area.name.toLowerCase().replace(/\s+/g, '_')}_4.py`, status: 'PASS', lastPassed: 'Build #6975', recentChanges: 'Connectivity test', suggestedFix: 'N/A' },
+        { filename: `test_${area.name.toLowerCase().replace(/\s+/g, '_')}_5.py`, status: 'PASS', lastPassed: 'Build #6975', recentChanges: 'Verified online', suggestedFix: 'N/A' }
+      ]
+    };
+  });
 
   return {
     total: totalTestCount,
