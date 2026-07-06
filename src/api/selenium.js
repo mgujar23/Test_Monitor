@@ -14,13 +14,10 @@ export async function fetchSeleniumTests(portalUrl) {
     console.log('[Selenium] Fetched portal data');
     const html = response.data;
 
-    // Parse total tests from summary
-    const totalMatch = html.match(/Total tests run, excluding old<\/td>\s*<td[^>]*>(\d+)<\/td>/);
-    const totalTests = totalMatch ? parseInt(totalMatch[1]) : 0;
-
     // Extract area data from test-dir-summary rows
     // Pattern: data-dir="dir-AREANAME" ... Total: X ... Passed: Y
     const areas = [];
+    let totalTests = 0;
     let totalFailed = 0;
 
     const areaPattern = /data-dir="dir-([^"]+)"[^>]*>[\s\S]*?<span[^>]*title="Total[^>]*>(\d+)<\/span>[\s\S]*?<span class="test-passed"[^>]*>(\d+)<\/span>/g;
@@ -35,6 +32,7 @@ export async function fetchSeleniumTests(portalUrl) {
       const total = parseInt(match[2]);
       const passed = parseInt(match[3]);
       const failed = total - passed;
+      totalTests += total;
       totalFailed += failed;
 
       // Create test objects matching actual pass/fail counts
