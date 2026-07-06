@@ -275,7 +275,6 @@ export default function Section({ title, data, sectionKey, onClickMetric }) {
                           <th className="text-left px-3 py-2">Status</th>
                           <th className="text-left px-3 py-2">Last passed</th>
                           <th className="text-left px-3 py-2">Recent changes</th>
-                          <th className="text-left px-3 py-2">Suggested fix</th>
                           <th className="text-left px-3 py-2">View Diff</th>
                         </tr>
                       </thead>
@@ -295,7 +294,6 @@ export default function Section({ title, data, sectionKey, onClickMetric }) {
                               </td>
                               <td className="px-3 py-2 text-gray-400">{test.lastPassed || 'N/A'}</td>
                               <td className="px-3 py-2 text-gray-400 max-w-xs truncate">{test.recentChanges || 'N/A'}</td>
-                              <td className="px-3 py-2 text-gray-400 max-w-xs truncate">{test.suggestedFix || 'N/A'}</td>
                               <td className="px-3 py-2">
                                 <button
                                   onClick={() => {
@@ -317,7 +315,7 @@ export default function Section({ title, data, sectionKey, onClickMetric }) {
                           ))
                         ) : (
                           <tr>
-                            <td colSpan="6" className="px-3 py-4 text-center text-gray-500">No tests found</td>
+                            <td colSpan="5" className="px-3 py-4 text-center text-gray-500">No tests found</td>
                           </tr>
                         )}
                       </tbody>
