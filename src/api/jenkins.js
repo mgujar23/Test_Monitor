@@ -65,8 +65,8 @@ export async function fetchReadyClusterTests(config) {
     // Fetch recent changes from the job's last 100 builds (covers ~1 month)
     let recentChanges = [];
     try {
-      // Get list of recent builds (fetch last 100 builds to cover ~1 month)
-      const buildsUrl = `${baseUrl}${jobPath}api/json?tree=builds[number,timestamp,result,changeSet[items[author[fullName],msg,timestamp]]]&excludedChangeTypes=excluded`;
+      // Get list of recent builds - use simpler API call
+      const buildsUrl = `${baseUrl}${jobPath}api/json?limit=100`;
       console.log('[ReadyCluster] Fetching build history from last 100 builds...');
 
       const buildsResponse = await axios.get(buildsUrl, {
@@ -75,6 +75,8 @@ export async function fetchReadyClusterTests(config) {
       });
 
       const builds = buildsResponse.data.builds || [];
+      console.log('[ReadyCluster] Got', builds.length, 'builds from Jenkins');
+
       const oneMonthAgo = new Date();
       oneMonthAgo.setDate(oneMonthAgo.getDate() - 30);
 
@@ -84,10 +86,13 @@ export async function fetchReadyClusterTests(config) {
 
         // Stop if we've gone past 1 month
         if (buildDate < oneMonthAgo && recentChanges.length > 0) {
+          console.log('[ReadyCluster] Reached date limit, stopping at', recentChanges.length, 'changes');
           return;
         }
 
         if (build.changeSet && build.changeSet.items && build.changeSet.items.length > 0) {
+          console.log(`[ReadyCluster] Build #${build.number} has ${build.changeSet.items.length} changes`);
+
           build.changeSet.items.forEach(item => {
             const message = item.msg || '';
             const ticketMatch = message.match(/([A-Z]+-\d+)/);
@@ -102,8 +107,6 @@ export async function fetchReadyClusterTests(config) {
             if (typeof author === 'object') {
               author = author.fullName || author.name || author.id || 'Unknown';
             }
-
-            console.log(`[ReadyCluster] Build #${build.number} - Author data:`, item.author, 'Extracted:', author);
 
             recentChanges.push({
               buildNum: String(build.number),
@@ -122,7 +125,7 @@ export async function fetchReadyClusterTests(config) {
     } catch (error) {
       console.warn('[ReadyCluster] Could not fetch changes:', error.message);
       console.warn('[ReadyCluster] Error details:', error.response?.status, error.response?.statusText);
-      console.warn('[ReadyCluster] Tried URL:', `${baseUrl}${jobPath}api/json?tree=builds[...]`);
+      console.warn('[ReadyCluster] Tried URL:', `${baseUrl}${jobPath}api/json?limit=100`);
     }
 
     // Use defaults if no changes found
