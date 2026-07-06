@@ -82,6 +82,7 @@ export default function Section({ title, data, sectionKey, onClickMetric }) {
                             <th className="text-left px-3 py-2">Date</th>
                             <th className="text-left px-3 py-2">Ticket #</th>
                             <th className="text-left px-3 py-2">Details</th>
+                            <th className="text-left px-3 py-2">Author</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -91,6 +92,7 @@ export default function Section({ title, data, sectionKey, onClickMetric }) {
                               <td className="px-3 py-2 text-gray-400">{change.date || '-'}</td>
                               <td className="px-3 py-2 text-blue-400">{change.ticketNum || '-'}</td>
                               <td className="px-3 py-2 max-w-xs truncate">{change.details || '-'}</td>
+                              <td className="px-3 py-2 text-green-300 font-semibold">{change.author || '-'}</td>
                             </tr>
                           ))}
                         </tbody>
