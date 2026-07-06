@@ -414,14 +414,90 @@ export default function Section({ title, data, sectionKey, onClickMetric }) {
           <h2 className="text-xl font-bold text-white flex-1">{title}</h2>
         </button>
 
-        {isExpanded && data.tests && (
-          <div className="mt-4 text-gray-300">
-            <p className="text-sm mb-3">{data.tests.length} new tests added</p>
-            {data.tests.map((test, idx) => (
-              <div key={idx} className="text-xs text-gray-400 border-l-2 border-gray-600 pl-2 py-1">
-                {test.filename}
+        {isExpanded && data.yearly && (
+          <div className="mt-4">
+            {Object.entries(data.yearly).map(([year, tests]) => (
+              <div key={year} className="mb-6">
+                <h3 className="text-sm font-semibold text-gray-300 mb-3">Year {year} ({tests.length} tests)</h3>
+                <div className="overflow-x-auto border border-dark-border rounded" style={{ maxHeight: '400px' }}>
+                  <table className="w-full text-xs text-gray-300">
+                    <thead className="sticky top-0 bg-dark-bg border-b border-dark-border">
+                      <tr>
+                        <th className="text-left px-3 py-2">Test Name</th>
+                        <th className="text-left px-3 py-2">Date Added</th>
+                        <th className="text-left px-3 py-2">Author</th>
+                        <th className="text-left px-3 py-2">Change #</th>
+                        <th className="text-left px-3 py-2">View Diff</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {tests.length > 0 ? (
+                        tests.map((test, idx) => (
+                          <tr key={idx} className="border-b border-dark-border hover:bg-dark-border/30">
+                            <td className="px-3 py-2">{test.filename}</td>
+                            <td className="px-3 py-2 text-gray-400">{test.date || 'N/A'}</td>
+                            <td className="px-3 py-2 text-gray-400">{test.author || 'N/A'}</td>
+                            <td className="px-3 py-2 text-gray-400">{test.changeNum || 'N/A'}</td>
+                            <td className="px-3 py-2">
+                              <button
+                                onClick={() => {
+                                  const diff = generateTestFixDiff({
+                                    name: test.filename,
+                                    className: test.filename,
+                                    status: 'ADDED',
+                                    author: test.author,
+                                    date: test.date
+                                  });
+                                  setCurrentDiff(diff);
+                                  setCurrentTestName(test.filename);
+                                  setShowDiffModal(true);
+                                }}
+                                className="px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded font-semibold transition-colors"
+                              >
+                                View
+                              </button>
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan="5" className="px-3 py-4 text-center text-gray-500">No tests added this year</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             ))}
+          </div>
+        )}
+
+        {/* Diff Modal for New Tests */}
+        {showDiffModal && currentDiff && (
+          <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-[60]">
+            <div className="bg-dark-card border border-dark-border rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+              <div className="flex items-center justify-between p-6 border-b border-dark-border bg-dark-card sticky top-0">
+                <div>
+                  <h3 className="text-lg font-bold text-white">Test File Details</h3>
+                  <p className="text-xs text-gray-500 mt-1">{currentTestName}</p>
+                </div>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-6 bg-dark-bg">
+                <pre className="text-xs text-gray-300 font-mono whitespace-pre-wrap break-words bg-dark-card border border-dark-border rounded p-4">
+{currentDiff}
+                </pre>
+              </div>
+
+              <div className="flex justify-end gap-2 p-6 border-t border-dark-border bg-dark-card">
+                <button
+                  onClick={() => setShowDiffModal(false)}
+                  className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded font-semibold text-sm transition-colors"
+                >
+                  Dismiss
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>
