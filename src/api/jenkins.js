@@ -231,14 +231,15 @@ function getIntegrationTestData(totalTestCount = 308187, failedTestCount = 813) 
   let summedFailed = 0;
 
   const areas = areaDistribution.map((area, idx) => {
-    let total = Math.round(totalTestCount * area.percentage);
-    let failed = Math.round(failedTestCount * area.failedPercentage);
+    let total, failed;
 
-    // Adjust last area to ensure exact sum
+    // Use floor for all except last to avoid overshooting
     if (idx === areaDistribution.length - 1) {
       total = totalTestCount - summedTotal;
       failed = failedTestCount - summedFailed;
     } else {
+      total = Math.floor(totalTestCount * area.percentage);
+      failed = Math.floor(failedTestCount * area.failedPercentage);
       summedTotal += total;
       summedFailed += failed;
     }
@@ -407,14 +408,15 @@ function getSmokeTestData(totalTestCount = 85, failedTestCount = 4) {
   let summedFailed = 0;
 
   const areas = areaDistribution.map((area, idx) => {
-    let total = Math.round(totalTestCount * area.percentage);
-    let failed = Math.round(failedTestCount * area.failedPercentage);
+    let total, failed;
 
-    // Adjust last area to ensure exact sum
+    // Use floor for all except last to avoid overshooting
     if (idx === areaDistribution.length - 1) {
       total = totalTestCount - summedTotal;
       failed = failedTestCount - summedFailed;
     } else {
+      total = Math.floor(totalTestCount * area.percentage);
+      failed = Math.floor(failedTestCount * area.failedPercentage);
       summedTotal += total;
       summedFailed += failed;
     }
