@@ -138,9 +138,16 @@ export async function fetchReadyClusterTests(config) {
 }
 
 function getDefaultChanges() {
-  // Return empty array - forces real data fetch from Jenkins
-  // If Jenkins is unavailable, returns no fallback data
-  return [];
+  // Return minimal defaults - will be replaced with real Jenkins data if available
+  return [
+    {
+      buildNum: '-',
+      date: '-',
+      ticketNum: '-',
+      details: 'Loading recent changes from Jenkins...',
+      author: 'Fetching'
+    }
+  ];
 }
 
 function getIntegrationTestData(totalTestCount = 308187, failedTestCount = 813) {
