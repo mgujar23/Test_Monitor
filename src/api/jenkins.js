@@ -174,8 +174,15 @@ export async function fetchReadyClusterTests(config) {
       try {
         const p4Config = config.perforce;
         if (p4Config && p4Config.serverUrl) {
+          console.log('[ReadyCluster] Perforce config found:', {
+            serverUrl: p4Config.serverUrl,
+            username: p4Config.username,
+            depotPath: p4Config.depotPath
+          });
+
           const auth = Buffer.from(`${p4Config.username}:${p4Config.password}`).toString('base64');
           const changesUrl = `${p4Config.serverUrl}/api/v1/changes?path=${encodeURIComponent(p4Config.depotPath)}/...&max=100`;
+          console.log('[ReadyCluster] Fetching from Perforce:', changesUrl);
 
           const p4Response = await axios.get(changesUrl, {
             headers: {
@@ -188,6 +195,10 @@ export async function fetchReadyClusterTests(config) {
 
           const changesList = p4Response.data.changes || [];
           console.log('[ReadyCluster] Got', changesList.length, 'changes from Perforce');
+
+          if (changesList.length > 0) {
+            console.log('[ReadyCluster] First change:', changesList[0]);
+          }
 
           // Extract real changes from Perforce
           const oneMonthAgo = new Date();
@@ -214,9 +225,12 @@ export async function fetchReadyClusterTests(config) {
           }
 
           console.log('[ReadyCluster] Extracted', recentChanges.length, 'changes from Perforce');
+        } else {
+          console.warn('[ReadyCluster] Perforce config not found');
         }
       } catch (error) {
-        console.warn('[ReadyCluster] Could not fetch from Perforce:', error.message);
+        console.error('[ReadyCluster] Perforce fetch error:', error.message);
+        console.error('[ReadyCluster] Error code:', error.code);
       }
     }
 
