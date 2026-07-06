@@ -10,6 +10,9 @@ export default function Section({ title, data, sectionKey, onClickMetric }) {
   const [selectedArea, setSelectedArea] = useState(null);
   const [currentPage, setCurrentPage] = useState(0);
   const [isChangesExpanded, setIsChangesExpanded] = useState(false);
+  const [showDiffModal, setShowDiffModal] = useState(false);
+  const [currentDiff, setCurrentDiff] = useState(null);
+  const [currentTestName, setCurrentTestName] = useState(null);
 
   if (!data) {
     return null;
@@ -470,18 +473,13 @@ export default function Section({ title, data, sectionKey, onClickMetric }) {
                                 className: test.filename,
                                 status: test.status
                               });
-                              const element = document.createElement('a');
-                              element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(diff));
-                              element.setAttribute('download', `fix-${test.filename}.patch`);
-                              element.style.display = 'none';
-                              document.body.appendChild(element);
-                              element.click();
-                              document.body.removeChild(element);
-                              alert('Diff downloaded! Check your downloads folder.');
+                              setCurrentDiff(diff);
+                              setCurrentTestName(test.filename);
+                              setShowDiffModal(true);
                             }}
                             className="px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded font-semibold transition-colors"
                           >
-                            Download
+                            View
                           </button>
                         </td>
                       </tr>
@@ -559,6 +557,54 @@ export default function Section({ title, data, sectionKey, onClickMetric }) {
               }}
             />
           ))}
+        </div>
+      )}
+
+      {/* Diff Modal */}
+      {showDiffModal && currentDiff && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-[60]">
+          <div className="bg-dark-card border border-dark-border rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+            {/* Header */}
+            <div className="flex items-center justify-between p-6 border-b border-dark-border bg-dark-card sticky top-0">
+              <div>
+                <h3 className="text-lg font-bold text-white">Suggested Code Changes</h3>
+                <p className="text-xs text-gray-500 mt-1">Diff for {currentTestName}</p>
+              </div>
+            </div>
+
+            {/* Diff Content */}
+            <div className="flex-1 overflow-y-auto p-6 bg-dark-bg">
+              <pre className="text-xs text-gray-300 font-mono whitespace-pre-wrap break-words bg-dark-card border border-dark-border rounded p-4">
+{currentDiff}
+              </pre>
+            </div>
+
+            {/* Actions */}
+            <div className="flex justify-end gap-2 p-6 border-t border-dark-border bg-dark-card">
+              <button
+                onClick={() => setShowDiffModal(false)}
+                className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded font-semibold text-sm transition-colors"
+              >
+                Dismiss
+              </button>
+              <button
+                onClick={() => {
+                  const element = document.createElement('a');
+                  element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(currentDiff));
+                  element.setAttribute('download', `fix-${currentTestName}.patch`);
+                  element.style.display = 'none';
+                  document.body.appendChild(element);
+                  element.click();
+                  document.body.removeChild(element);
+                  alert('Patch downloaded to your Downloads folder!');
+                  setShowDiffModal(false);
+                }}
+                className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded font-semibold text-sm transition-colors"
+              >
+                Download
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
