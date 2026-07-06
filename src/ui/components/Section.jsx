@@ -62,42 +62,49 @@ export default function Section({ title, data, sectionKey, onClickMetric }) {
             ))}
 
             {/* Recent Changes Section */}
-            {data.changes && data.changes.length > 0 && (
+            {data.changes && (
               <div className="mt-6 bg-dark-bg rounded border border-dark-border">
                 <button
                   onClick={() => setIsChangesExpanded(!isChangesExpanded)}
                   className="w-full text-left flex items-center gap-3 hover:bg-dark-border/50 p-4 rounded transition-colors"
                 >
                   <span className="text-lg">{isChangesExpanded ? '▼' : '▶'}</span>
-                  <h3 className="text-sm font-semibold text-gray-300">Recent Changes</h3>
+                  <h3 className="text-sm font-semibold text-gray-300">Recent Changes (Last Month)</h3>
                 </button>
 
                 {isChangesExpanded && (
                   <div className="border-t border-dark-border p-4">
-                    <div className="overflow-y-auto overflow-x-auto border border-dark-border rounded" style={{ maxHeight: '500px' }}>
-                      <table className="w-full text-xs text-gray-300">
-                        <thead className="bg-dark-card border-b border-dark-border sticky top-0">
-                          <tr>
-                            <th className="text-left px-3 py-2 min-w-[70px]">Build #</th>
-                            <th className="text-left px-3 py-2 min-w-[80px]">Date</th>
-                            <th className="text-left px-3 py-2 min-w-[70px]">Ticket #</th>
-                            <th className="text-left px-3 py-2 min-w-[200px]">Details</th>
-                            <th className="text-left px-3 py-2 min-w-[120px]">Author</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {data.changes.map((change, idx) => (
-                            <tr key={idx} className="border-b border-dark-border hover:bg-dark-border/30">
-                              <td className="px-3 py-2 text-gray-300 font-semibold">{change.buildNum || '-'}</td>
-                              <td className="px-3 py-2 text-gray-400">{change.date || '-'}</td>
-                              <td className="px-3 py-2 text-blue-400">{change.ticketNum || '-'}</td>
-                              <td className="px-3 py-2 truncate text-gray-400">{change.details || '-'}</td>
-                              <td className="px-3 py-2 text-green-300 font-semibold">{change.author || '-'}</td>
+                    {data.changes.length === 0 ? (
+                      <div className="text-center py-8 text-gray-500">
+                        <p className="text-sm">No recent changes available</p>
+                        <p className="text-xs mt-2 text-gray-600">Waiting for real data from Jenkins changeSet or Perforce...</p>
+                      </div>
+                    ) : (
+                      <div className="overflow-y-auto overflow-x-auto border border-dark-border rounded" style={{ maxHeight: '500px' }}>
+                        <table className="w-full text-xs text-gray-300">
+                          <thead className="bg-dark-card border-b border-dark-border sticky top-0">
+                            <tr>
+                              <th className="text-left px-3 py-2 min-w-[70px]">Build #</th>
+                              <th className="text-left px-3 py-2 min-w-[80px]">Date</th>
+                              <th className="text-left px-3 py-2 min-w-[70px]">Ticket #</th>
+                              <th className="text-left px-3 py-2 min-w-[200px]">Details</th>
+                              <th className="text-left px-3 py-2 min-w-[120px]">Author</th>
                             </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
+                          </thead>
+                          <tbody>
+                            {data.changes.map((change, idx) => (
+                              <tr key={idx} className="border-b border-dark-border hover:bg-dark-border/30">
+                                <td className="px-3 py-2 text-gray-300 font-semibold">{change.buildNum || '-'}</td>
+                                <td className="px-3 py-2 text-gray-400">{change.date || '-'}</td>
+                                <td className="px-3 py-2 text-blue-400">{change.ticketNum || '-'}</td>
+                                <td className="px-3 py-2 truncate text-gray-400">{change.details || '-'}</td>
+                                <td className="px-3 py-2 text-green-300 font-semibold">{change.author || '-'}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
