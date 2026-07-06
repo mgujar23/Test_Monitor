@@ -81,7 +81,17 @@ export async function fetchReadyClusterTests(config) {
             const ticketMatch = message.match(/([A-Z]+-\d+)/);
             const ticketNum = ticketMatch ? ticketMatch[1] : '-';
             const date = new Date(build.timestamp).toISOString().split('T')[0];
-            const author = item.author?.fullName || item.author?.id || 'Unknown';
+
+            // Extract author - try multiple possible formats
+            let author = 'Unknown';
+            if (item.author) {
+              author = item.author.fullName || item.author.name || item.author.id || item.author || 'Unknown';
+            }
+            if (typeof author === 'object') {
+              author = author.fullName || author.name || author.id || 'Unknown';
+            }
+
+            console.log(`[ReadyCluster] Build #${build.number} - Author data:`, item.author, 'Extracted:', author);
 
             recentChanges.push({
               buildNum: String(build.number),
@@ -96,7 +106,7 @@ export async function fetchReadyClusterTests(config) {
         }
       });
 
-      console.log('[ReadyCluster] Found', recentChanges.length, 'changes');
+      console.log('[ReadyCluster] Found', recentChanges.length, 'changes with authors');
     } catch (error) {
       console.warn('[ReadyCluster] Could not fetch changes:', error.message);
     }
@@ -128,78 +138,9 @@ export async function fetchReadyClusterTests(config) {
 }
 
 function getDefaultChanges() {
-  return [
-    {
-      buildNum: '6975',
-      date: '2026-07-02',
-      ticketNum: 'WSC-7657',
-      details: 'No longer publishing RLY RPMs - Infrastructure update',
-      author: 'John Smith'
-    },
-    {
-      buildNum: '6974',
-      date: '2026-07-01',
-      ticketNum: 'CES-6542',
-      details: 'Stops head->rly dev sync, document dev_ia8 sync',
-      author: 'Sarah Johnson'
-    },
-    {
-      buildNum: '6973',
-      date: '2026-06-30',
-      ticketNum: 'WSC-6658',
-      details: 'Auto-wire HAProxy portal door when cluster has lb-www',
-      author: 'Mike Chen'
-    },
-    {
-      buildNum: '6972',
-      date: '2026-06-29',
-      ticketNum: 'WSC-6658',
-      details: 'Harden portal-path-test.sh verdict logic',
-      author: 'Emily Davis'
-    },
-    {
-      buildNum: '6971',
-      date: '2026-06-28',
-      ticketNum: 'WSC-7616',
-      details: 'Re-enable crond for the post-install phase',
-      author: 'Robert Wilson'
-    },
-    {
-      buildNum: '6970',
-      date: '2026-06-27',
-      ticketNum: 'WSC-7616',
-      details: 'Quiesce crond during the in-build OS upgrade',
-      author: 'Lisa Brown'
-    },
-    {
-      buildNum: '6969',
-      date: '2026-06-26',
-      ticketNum: 'DEV-1234',
-      details: 'Update cluster configuration for security',
-      author: 'James Martinez'
-    },
-    {
-      buildNum: '6968',
-      date: '2026-06-25',
-      ticketNum: 'OPS-5678',
-      details: 'Database migration and schema updates',
-      author: 'Angela Taylor'
-    },
-    {
-      buildNum: '6967',
-      date: '2026-06-24',
-      ticketNum: 'SEC-2020',
-      details: 'Security patch for SSL/TLS vulnerabilities',
-      author: 'David Lee'
-    },
-    {
-      buildNum: '6966',
-      date: '2026-06-23',
-      ticketNum: 'NET-3456',
-      details: 'Network configuration optimization',
-      author: 'Patricia Garcia'
-    }
-  ];
+  // Return empty array - forces real data fetch from Jenkins
+  // If Jenkins is unavailable, returns no fallback data
+  return [];
 }
 
 function getIntegrationTestData(totalTestCount = 308187, failedTestCount = 813) {
