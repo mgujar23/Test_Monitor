@@ -374,6 +374,7 @@ export default function Section({ title, data, sectionKey, onClickMetric }) {
               {selectedMetric === 'failed' && 'Areas with Failures'}
               {selectedMetric === 'stale' && 'Stale Test Areas'}
             </div>
+            <div className="overflow-y-auto overflow-x-hidden border border-dark-border rounded p-3" style={{ maxHeight: '340px' }}>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
               {data.areas
                 .filter(area => {
@@ -381,15 +382,17 @@ export default function Section({ title, data, sectionKey, onClickMetric }) {
                   if (selectedMetric === 'stale') return area.stale > 0;
                   return true;
                 })
-                .map((area, idx) => (
+                .map((area) => {
+                  const areaIndex = data.areas.indexOf(area);
+                  return (
                   <button
-                    key={idx}
+                    key={areaIndex}
                     onClick={() => {
-                      setSelectedArea(selectedArea === idx ? null : idx);
+                      setSelectedArea(selectedArea === areaIndex ? null : areaIndex);
                       setCurrentPage(0);
                     }}
                     className={`p-3 rounded border transition-colors text-left ${
-                      selectedArea === idx
+                      selectedArea === areaIndex
                         ? 'bg-dark-border border-blue-500 border-2'
                         : 'bg-dark-card border-dark-border hover:border-gray-500'
                     }`}
@@ -402,7 +405,9 @@ export default function Section({ title, data, sectionKey, onClickMetric }) {
                        area.total}
                     </div>
                   </button>
-                ))}
+                  );
+                })}
+            </div>
             </div>
           </div>
         )}

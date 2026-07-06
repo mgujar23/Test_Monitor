@@ -191,135 +191,61 @@ function getDefaultChanges() {
 }
 
 function getIntegrationTestData(totalTestCount = 308187, failedTestCount = 813) {
-  // Create specific areas with realistic test distribution
-  const canonicalTotal = 149469;
-  const shadowTotal = 158718;
-  const canonicalFailed = 531;
-  const shadowFailed = 282;
+  // Create granular areas with realistic test distribution
+  const areaDistribution = [
+    { name: 'User Registration & Onboarding', percentage: 0.08, failed: 45 },
+    { name: 'Login & Session Management', percentage: 0.07, failed: 38 },
+    { name: 'Password & Account Recovery', percentage: 0.05, failed: 22 },
+    { name: 'Role-Based Access Control', percentage: 0.04, failed: 15 },
+    { name: 'REST API Endpoints', percentage: 0.09, failed: 52 },
+    { name: 'Request Validation & Schema', percentage: 0.08, failed: 45 },
+    { name: 'Response Formatting & Serialization', percentage: 0.06, failed: 28 },
+    { name: 'Error Handling & Status Codes', percentage: 0.05, failed: 22 },
+    { name: 'Rate Limiting & Throttling', percentage: 0.04, failed: 18 },
+    { name: 'CRUD Operations', percentage: 0.08, failed: 42 },
+    { name: 'Transaction Isolation & Locking', percentage: 0.06, failed: 32 },
+    { name: 'Query Optimization & Performance', percentage: 0.05, failed: 18 },
+    { name: 'Data Indexing & Searching', percentage: 0.04, failed: 12 },
+    { name: 'Service Discovery & Registration', percentage: 0.05, failed: 22 },
+    { name: 'Message Queue & Event Processing', percentage: 0.06, failed: 32 },
+    { name: 'Circuit Breaker & Resilience', percentage: 0.04, failed: 15 },
+    { name: 'Retry Logic & Backoff Strategies', percentage: 0.03, failed: 10 },
+    { name: 'Distributed Cache Management', percentage: 0.05, failed: 28 },
+    { name: 'Memory Optimization & Pooling', percentage: 0.04, failed: 18 },
+    { name: 'Latency & Performance Benchmarks', percentage: 0.03, failed: 12 },
+    { name: 'SQL Injection & XSS Prevention', percentage: 0.04, failed: 0 },
+    { name: 'Encryption & Data Protection', percentage: 0.03, failed: 0 },
+    { name: 'Audit Logging & Compliance', percentage: 0.02, failed: 0 },
+    { name: 'Concurrent User Load Testing', percentage: 0.06, failed: 35 },
+    { name: 'Memory Leak Detection & Profiling', percentage: 0.04, failed: 22 },
+    { name: 'Database Throughput & Scaling', percentage: 0.05, failed: 28 },
+    { name: 'Data Consistency Verification', percentage: 0.05, failed: 28 },
+    { name: 'Disaster Recovery & Backup', percentage: 0.03, failed: 12 },
+    { name: 'Failover & High Availability', percentage: 0.03, failed: 12 },
+    { name: 'Null & Boundary Value Handling', percentage: 0.03, failed: 18 },
+    { name: 'Large Dataset & Collection Handling', percentage: 0.02, failed: 10 },
+    { name: 'Malformed Input & Invalid Data', percentage: 0.02, failed: 8 }
+  ];
+
+  const areas = areaDistribution.map(area => ({
+    name: area.name,
+    total: Math.round(totalTestCount * area.percentage),
+    failed: area.failed,
+    stale: 0,
+    tests: [
+      { filename: `test_${area.name.toLowerCase().replace(/\s+/g, '_')}_1.py`, status: area.failed > 0 ? 'FAIL' : 'PASS', lastPassed: area.failed > 0 ? 'Build #530' : 'Build #534', recentChanges: area.failed > 0 ? 'Investigation ongoing' : 'Passing consistently', suggestedFix: area.failed > 0 ? 'Review test failure logs' : 'N/A' },
+      { filename: `test_${area.name.toLowerCase().replace(/\s+/g, '_')}_2.py`, status: 'PASS', lastPassed: 'Build #534', recentChanges: 'Core functionality', suggestedFix: 'N/A' },
+      { filename: `test_${area.name.toLowerCase().replace(/\s+/g, '_')}_3.py`, status: 'PASS', lastPassed: 'Build #534', recentChanges: 'Enhanced coverage', suggestedFix: 'N/A' },
+      { filename: `test_${area.name.toLowerCase().replace(/\s+/g, '_')}_4.py`, status: 'PASS', lastPassed: 'Build #534', recentChanges: 'Edge case handling', suggestedFix: 'N/A' },
+      { filename: `test_${area.name.toLowerCase().replace(/\s+/g, '_')}_5.py`, status: 'PASS', lastPassed: 'Build #534', recentChanges: 'Integration verified', suggestedFix: 'N/A' }
+    ]
+  }));
 
   return {
     total: totalTestCount,
     failed: failedTestCount,
     stale: 0,
-    areas: [
-      {
-        name: 'User Management & Authentication',
-        total: 28000,
-        failed: 120,
-        stale: 0,
-        tests: [
-          { filename: 'test_user_registration.py', status: 'PASS', lastPassed: 'Build #534', recentChanges: 'Add email verification', suggestedFix: 'N/A' },
-          { filename: 'test_login_flow.py', status: 'FAIL', lastPassed: 'Build #530', recentChanges: 'Update OAuth2 provider', suggestedFix: 'Mock OAuth responses' },
-          { filename: 'test_password_management.py', status: 'PASS', lastPassed: 'Build #534', recentChanges: 'Enhance password reset', suggestedFix: 'N/A' },
-          { filename: 'test_session_handling.py', status: 'PASS', lastPassed: 'Build #534', recentChanges: 'Implement session timeout', suggestedFix: 'N/A' },
-          { filename: 'test_role_based_access.py', status: 'PASS', lastPassed: 'Build #534', recentChanges: 'Add RBAC support', suggestedFix: 'N/A' }
-        ]
-      },
-      {
-        name: 'API Endpoints & Routing',
-        total: 35000,
-        failed: 180,
-        stale: 0,
-        tests: [
-          { filename: 'test_rest_endpoints.py', status: 'PASS', lastPassed: 'Build #534', recentChanges: 'Add pagination', suggestedFix: 'N/A' },
-          { filename: 'test_request_validation.py', status: 'FAIL', lastPassed: 'Build #532', recentChanges: 'Update schema validation', suggestedFix: 'Update mock schemas' },
-          { filename: 'test_response_formatting.py', status: 'PASS', lastPassed: 'Build #534', recentChanges: 'Standardize responses', suggestedFix: 'N/A' },
-          { filename: 'test_error_handling.py', status: 'PASS', lastPassed: 'Build #534', recentChanges: 'Add error codes', suggestedFix: 'N/A' },
-          { filename: 'test_rate_limiting.py', status: 'PASS', lastPassed: 'Build #534', recentChanges: 'Implement rate limits', suggestedFix: 'N/A' }
-        ]
-      },
-      {
-        name: 'Database Operations & Transactions',
-        total: 30000,
-        failed: 95,
-        stale: 0,
-        tests: [
-          { filename: 'test_crud_operations.py', status: 'PASS', lastPassed: 'Build #534', recentChanges: 'Add bulk operations', suggestedFix: 'N/A' },
-          { filename: 'test_transaction_isolation.py', status: 'FAIL', lastPassed: 'Build #531', recentChanges: 'Update isolation levels', suggestedFix: 'Verify lock behavior' },
-          { filename: 'test_query_performance.py', status: 'PASS', lastPassed: 'Build #534', recentChanges: 'Optimize queries', suggestedFix: 'N/A' },
-          { filename: 'test_index_usage.py', status: 'PASS', lastPassed: 'Build #534', recentChanges: 'Add indexes', suggestedFix: 'N/A' },
-          { filename: 'test_data_consistency.py', status: 'PASS', lastPassed: 'Build #534', recentChanges: 'Add constraints', suggestedFix: 'N/A' }
-        ]
-      },
-      {
-        name: 'Service Integration & Communication',
-        total: 28000,
-        failed: 85,
-        stale: 0,
-        tests: [
-          { filename: 'test_service_discovery.py', status: 'PASS', lastPassed: 'Build #534', recentChanges: 'Add service registry', suggestedFix: 'N/A' },
-          { filename: 'test_message_queuing.py', status: 'FAIL', lastPassed: 'Build #529', recentChanges: 'Upgrade message broker', suggestedFix: 'Update broker configuration' },
-          { filename: 'test_event_processing.py', status: 'PASS', lastPassed: 'Build #534', recentChanges: 'Add event handlers', suggestedFix: 'N/A' },
-          { filename: 'test_circuit_breaker.py', status: 'PASS', lastPassed: 'Build #534', recentChanges: 'Implement resilience', suggestedFix: 'N/A' },
-          { filename: 'test_retry_logic.py', status: 'PASS', lastPassed: 'Build #534', recentChanges: 'Add backoff strategy', suggestedFix: 'N/A' }
-        ]
-      },
-      {
-        name: 'Cache & Performance Optimization',
-        total: 20000,
-        failed: 51,
-        stale: 0,
-        tests: [
-          { filename: 'test_cache_invalidation.py', status: 'PASS', lastPassed: 'Build #534', recentChanges: 'Update cache strategy', suggestedFix: 'N/A' },
-          { filename: 'test_cache_coherence.py', status: 'FAIL', lastPassed: 'Build #531', recentChanges: 'Add distributed cache', suggestedFix: 'Verify cache sync' },
-          { filename: 'test_memory_usage.py', status: 'PASS', lastPassed: 'Build #534', recentChanges: 'Optimize memory', suggestedFix: 'N/A' },
-          { filename: 'test_connection_pooling.py', status: 'PASS', lastPassed: 'Build #534', recentChanges: 'Tune pool settings', suggestedFix: 'N/A' },
-          { filename: 'test_latency_benchmarks.py', status: 'PASS', lastPassed: 'Build #534', recentChanges: 'Add performance metrics', suggestedFix: 'N/A' }
-        ]
-      },
-      {
-        name: 'Security & Compliance',
-        total: 8469,
-        failed: 0,
-        stale: 0,
-        tests: [
-          { filename: 'test_sql_injection_prevention.py', status: 'PASS', lastPassed: 'Build #534', recentChanges: 'Parameterized queries', suggestedFix: 'N/A' },
-          { filename: 'test_xss_protection.py', status: 'PASS', lastPassed: 'Build #534', recentChanges: 'Output encoding', suggestedFix: 'N/A' },
-          { filename: 'test_encryption.py', status: 'PASS', lastPassed: 'Build #534', recentChanges: 'Update cipher', suggestedFix: 'N/A' },
-          { filename: 'test_audit_logging.py', status: 'PASS', lastPassed: 'Build #534', recentChanges: 'Log sensitive ops', suggestedFix: 'N/A' },
-          { filename: 'test_gdpr_compliance.py', status: 'PASS', lastPassed: 'Build #534', recentChanges: 'Data retention policy', suggestedFix: 'N/A' }
-        ]
-      },
-      {
-        name: 'Load Testing & Performance',
-        total: 40000,
-        failed: 95,
-        stale: 0,
-        tests: [
-          { filename: 'test_concurrent_users.py', status: 'PASS', lastPassed: 'Build #284', recentChanges: 'Stress at 10k users', suggestedFix: 'N/A' },
-          { filename: 'test_memory_under_load.py', status: 'FAIL', lastPassed: 'Build #280', recentChanges: 'Profiling', suggestedFix: 'Optimize memory leaks' },
-          { filename: 'test_database_throughput.py', status: 'PASS', lastPassed: 'Build #284', recentChanges: 'DB benchmarking', suggestedFix: 'N/A' },
-          { filename: 'test_api_response_time.py', status: 'PASS', lastPassed: 'Build #284', recentChanges: 'Latency monitoring', suggestedFix: 'N/A' },
-          { filename: 'test_scalability.py', status: 'PASS', lastPassed: 'Build #284', recentChanges: 'Horizontal scaling', suggestedFix: 'N/A' }
-        ]
-      },
-      {
-        name: 'Data Consistency & Reliability',
-        total: 35000,
-        failed: 82,
-        stale: 0,
-        tests: [
-          { filename: 'test_eventually_consistent.py', status: 'PASS', lastPassed: 'Build #284', recentChanges: 'Consistency checks', suggestedFix: 'N/A' },
-          { filename: 'test_data_integrity.py', status: 'FAIL', lastPassed: 'Build #281', recentChanges: 'Validation rules', suggestedFix: 'Update constraint checks' },
-          { filename: 'test_disaster_recovery.py', status: 'PASS', lastPassed: 'Build #284', recentChanges: 'Backup verification', suggestedFix: 'N/A' },
-          { filename: 'test_failover_scenarios.py', status: 'PASS', lastPassed: 'Build #284', recentChanges: 'Add failover tests', suggestedFix: 'N/A' },
-          { filename: 'test_sync_protocols.py', status: 'PASS', lastPassed: 'Build #284', recentChanges: 'Data sync', suggestedFix: 'N/A' }
-        ]
-      },
-      {
-        name: 'Edge Cases & Boundary Conditions',
-        total: 8718,
-        failed: 105,
-        stale: 0,
-        tests: [
-          { filename: 'test_null_handling.py', status: 'PASS', lastPassed: 'Build #284', recentChanges: 'Null checks', suggestedFix: 'N/A' },
-          { filename: 'test_boundary_values.py', status: 'FAIL', lastPassed: 'Build #282', recentChanges: 'Range validation', suggestedFix: 'Add boundary assertions' },
-          { filename: 'test_empty_collections.py', status: 'PASS', lastPassed: 'Build #284', recentChanges: 'Edge case handling', suggestedFix: 'N/A' },
-          { filename: 'test_large_datasets.py', status: 'PASS', lastPassed: 'Build #284', recentChanges: 'Large data tests', suggestedFix: 'N/A' },
-          { filename: 'test_malformed_input.py', status: 'PASS', lastPassed: 'Build #284', recentChanges: 'Input validation', suggestedFix: 'N/A' }
-        ]
-      }
-    ]
+    areas: areas
   };
 }
 
@@ -436,61 +362,43 @@ export async function fetchIntegrationTests(config) {
 }
 
 function getSmokeTestData(totalTestCount = 85, failedTestCount = 4) {
-  // Define area distribution percentages and which areas have failures
+  // Define granular area distribution for smoke tests
   const areaDistribution = [
-    { name: 'Application Startup & Initialization', percentage: 0.1412, hasFailures: false },
-    { name: 'Configuration & Environment Setup', percentage: 0.1176, hasFailures: false },
-    { name: 'Database & Cache Connectivity', percentage: 0.0941, hasFailures: true },
-    { name: 'Core API & Service Health', percentage: 0.1765, hasFailures: true },
-    { name: 'Security & TLS Verification', percentage: 0.1412, hasFailures: true },
-    { name: 'Logging & Monitoring Setup', percentage: 0.1647, hasFailures: false },
-    { name: 'Data Validation & Integrity', percentage: 0.1176, hasFailures: true },
-    { name: 'External Service Integration', percentage: 0.0471, hasFailures: false }
+    { name: 'Application Startup & Bootstrap', percentage: 0.08, failed: 0 },
+    { name: 'Dependency Injection & Configuration', percentage: 0.07, failed: 0 },
+    { name: 'Environment Variables & Secrets', percentage: 0.06, failed: 0 },
+    { name: 'Database Connection Pooling', percentage: 0.06, failed: 1 },
+    { name: 'Redis Cache Connectivity', percentage: 0.05, failed: 0 },
+    { name: 'Message Queue Connectivity', percentage: 0.05, failed: 1 },
+    { name: 'Core API Health Check', percentage: 0.07, failed: 0 },
+    { name: 'Authentication Service Status', percentage: 0.06, failed: 1 },
+    { name: 'Authorization & Permissions', percentage: 0.05, failed: 0 },
+    { name: 'SSL/TLS Certificate Validation', percentage: 0.06, failed: 0 },
+    { name: 'HTTPS Endpoint Verification', percentage: 0.05, failed: 1 },
+    { name: 'Security Headers & Policies', percentage: 0.04, failed: 0 },
+    { name: 'Logging System Health', percentage: 0.06, failed: 0 },
+    { name: 'Metrics & Monitoring Collection', percentage: 0.05, failed: 0 },
+    { name: 'Health Check Endpoint', percentage: 0.04, failed: 0 },
+    { name: 'Data Validation Rules', percentage: 0.05, failed: 0 },
+    { name: 'Data Integrity Checks', percentage: 0.04, failed: 0 },
+    { name: 'External API Connectivity', percentage: 0.04, failed: 0 },
+    { name: 'Third-Party Service Status', percentage: 0.03, failed: 0 },
+    { name: 'Webhook Integration Points', percentage: 0.02, failed: 0 }
   ];
 
-  // Calculate area totals based on actual total test count
-  const areas = [];
-  let remainingFailed = failedTestCount;
-  const areasThatCanFail = areaDistribution.filter(a => a.hasFailures);
-
-  areaDistribution.forEach((area, idx) => {
-    const areaTotal = Math.round(totalTestCount * area.percentage);
-    let areaFailed = 0;
-
-    if (area.hasFailures && areasThatCanFail.length > 0 && remainingFailed > 0) {
-      // Distribute failures proportionally among areas that can fail
-      const proportionOfThisArea = area.percentage / areasThatCanFail.reduce((sum, a) => sum + a.percentage, 0);
-      areaFailed = Math.min(
-        Math.max(1, Math.ceil(remainingFailed * proportionOfThisArea)),
-        areaTotal
-      );
-      remainingFailed -= areaFailed;
-    }
-
-    areas.push({
-      name: area.name,
-      total: areaTotal,
-      failed: areaFailed,
-      stale: 0,
-      tests: [
-        { filename: `test_${area.name.toLowerCase().replace(/\s+/g, '_')}_1.py`, status: areaFailed > 0 ? 'FAIL' : 'PASS', lastPassed: areaFailed > 0 ? 'Build #6973' : 'Build #6975', recentChanges: areaFailed > 0 ? 'Bug fix required' : 'Core functionality', suggestedFix: areaFailed > 0 ? 'Check logs for errors' : 'N/A' },
-        { filename: `test_${area.name.toLowerCase().replace(/\s+/g, '_')}_2.py`, status: 'PASS', lastPassed: 'Build #6975', recentChanges: 'Feature enhancement', suggestedFix: 'N/A' },
-        { filename: `test_${area.name.toLowerCase().replace(/\s+/g, '_')}_3.py`, status: 'PASS', lastPassed: 'Build #6975', recentChanges: 'Edge case handling', suggestedFix: 'N/A' },
-        { filename: `test_${area.name.toLowerCase().replace(/\s+/g, '_')}_4.py`, status: 'PASS', lastPassed: 'Build #6975', recentChanges: 'Integration test', suggestedFix: 'N/A' },
-        { filename: `test_${area.name.toLowerCase().replace(/\s+/g, '_')}_5.py`, status: 'PASS', lastPassed: 'Build #6975', recentChanges: 'Verified', suggestedFix: 'N/A' }
-      ]
-    });
-  });
-
-  // Distribute any remaining failed count to areas with failures
-  if (remainingFailed > 0) {
-    for (let i = areas.length - 1; i >= 0 && remainingFailed > 0; i--) {
-      if (areas[i].failed > 0) {
-        areas[i].failed += remainingFailed;
-        remainingFailed = 0;
-      }
-    }
-  }
+  const areas = areaDistribution.map(area => ({
+    name: area.name,
+    total: Math.round(totalTestCount * area.percentage),
+    failed: area.failed,
+    stale: 0,
+    tests: [
+      { filename: `test_${area.name.toLowerCase().replace(/\s+/g, '_')}_1.py`, status: area.failed > 0 ? 'FAIL' : 'PASS', lastPassed: area.failed > 0 ? 'Build #6973' : 'Build #6975', recentChanges: area.failed > 0 ? 'Investigating failure' : 'Smoke test passing', suggestedFix: area.failed > 0 ? 'Check service health' : 'N/A' },
+      { filename: `test_${area.name.toLowerCase().replace(/\s+/g, '_')}_2.py`, status: 'PASS', lastPassed: 'Build #6975', recentChanges: 'Smoke check', suggestedFix: 'N/A' },
+      { filename: `test_${area.name.toLowerCase().replace(/\s+/g, '_')}_3.py`, status: 'PASS', lastPassed: 'Build #6975', recentChanges: 'System verification', suggestedFix: 'N/A' },
+      { filename: `test_${area.name.toLowerCase().replace(/\s+/g, '_')}_4.py`, status: 'PASS', lastPassed: 'Build #6975', recentChanges: 'Connectivity test', suggestedFix: 'N/A' },
+      { filename: `test_${area.name.toLowerCase().replace(/\s+/g, '_')}_5.py`, status: 'PASS', lastPassed: 'Build #6975', recentChanges: 'Verified online', suggestedFix: 'N/A' }
+    ]
+  }));
 
   return {
     total: totalTestCount,
