@@ -168,9 +168,61 @@ export async function fetchReadyClusterTests(config) {
       }
     }
 
-    // Use defaults if still no changes found
+    // Try to fetch from Perforce if Jenkins has no changeSet
     if (recentChanges.length === 0) {
-      console.warn('[ReadyCluster] Still no changes, using fallback');
+      console.warn('[ReadyCluster] Still no changes from Jenkins, trying Perforce...');
+      try {
+        const p4Config = config.perforce;
+        if (p4Config && p4Config.serverUrl) {
+          const auth = Buffer.from(`${p4Config.username}:${p4Config.password}`).toString('base64');
+          const changesUrl = `${p4Config.serverUrl}/api/v1/changes?path=${encodeURIComponent(p4Config.depotPath)}/...&max=100`;
+
+          const p4Response = await axios.get(changesUrl, {
+            headers: {
+              'Authorization': `Basic ${auth}`,
+              'Content-Type': 'application/json'
+            },
+            timeout: 15000,
+            httpsAgent: { rejectUnauthorized: false }
+          });
+
+          const changesList = p4Response.data.changes || [];
+          console.log('[ReadyCluster] Got', changesList.length, 'changes from Perforce');
+
+          // Extract real changes from Perforce
+          const oneMonthAgo = new Date();
+          oneMonthAgo.setDate(oneMonthAgo.getDate() - 30);
+
+          for (const change of changesList.slice(0, 100)) {
+            const changeDate = new Date(change.time * 1000);
+            if (changeDate < oneMonthAgo && recentChanges.length > 0) break;
+
+            const dateStr = changeDate.toISOString().split('T')[0];
+            const description = change.desc || '';
+            const ticketMatch = description.match(/([A-Z]+-\d+)/);
+            const ticketNum = ticketMatch ? ticketMatch[0] : '-';
+
+            recentChanges.push({
+              buildNum: String(change.change || '-'),
+              date: dateStr,
+              ticketNum: ticketNum,
+              details: description.substring(0, 100),
+              author: change.user || 'Unknown'
+            });
+
+            if (recentChanges.length >= 100) break;
+          }
+
+          console.log('[ReadyCluster] Extracted', recentChanges.length, 'changes from Perforce');
+        }
+      } catch (error) {
+        console.warn('[ReadyCluster] Could not fetch from Perforce:', error.message);
+      }
+    }
+
+    // Use defaults only if still no changes found
+    if (recentChanges.length === 0) {
+      console.warn('[ReadyCluster] No changes found anywhere, using fallback');
       recentChanges = getDefaultChanges();
     }
 
