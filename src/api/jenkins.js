@@ -170,9 +170,23 @@ export async function fetchReadyClusterTests(config) {
       }
     }
 
-    // Try to fetch from Git repository if Jenkins has no changeSet
+    // Try to fetch from Perforce if Jenkins has no changeSet
+    if (recentChanges.length === 0 && config.perforce) {
+      console.warn('[ReadyCluster] No changes in Jenkins, trying Perforce...');
+      try {
+        const p4Changes = getPerforceChanges(config.perforce.depotPath, 100);
+        if (p4Changes.length > 0) {
+          recentChanges = p4Changes;
+          console.log('[ReadyCluster] Loaded', recentChanges.length, 'changes from Perforce');
+        }
+      } catch (error) {
+        console.error('[ReadyCluster] Perforce fetch error:', error.message);
+      }
+    }
+
+    // Fall back to Git repository if Perforce has no changes
     if (recentChanges.length === 0 && config.git && config.git.repoPath) {
-      console.warn('[ReadyCluster] No changes in Jenkins, trying Git repository...');
+      console.warn('[ReadyCluster] No changes in Perforce, trying Git repository...');
       try {
         const gitCommits = getGitCommits(config.git.repoPath, 100);
         if (gitCommits.length > 0) {
@@ -186,7 +200,7 @@ export async function fetchReadyClusterTests(config) {
 
     // Report status
     if (recentChanges.length === 0) {
-      console.warn('[ReadyCluster] No real changes found from Jenkins, Git, or Perforce');
+      console.warn('[ReadyCluster] No real changes found from Jenkins, Perforce, or Git');
       console.warn('[ReadyCluster] Recent Changes section will be empty');
     }
 
@@ -208,6 +222,64 @@ export async function fetchReadyClusterTests(config) {
   } catch (error) {
     console.error('Error fetching Ready Cluster tests:', error.message);
     return { builds: [], changes: [], total: 0, failed: 0, stale: 0, areas: [] };
+  }
+}
+
+function getPerforceChanges(depotPath, maxChanges = 100) {
+  try {
+    console.log('[P4] Fetching changes from:', depotPath);
+
+    // Set P4 environment variables
+    process.env.P4PORT = 'perforce.cicd.cloud.fpdev.io:1666';
+    process.env.P4USER = 'minal.gujar';
+
+    // Fetch recent changes using p4 changes command
+    const changesCmd = `/opt/homebrew/bin/p4 changes -m ${maxChanges} ${depotPath}/...`;
+    const changesOutput = execSync(changesCmd, { encoding: 'utf-8', timeout: 30000 });
+
+    const changeLines = changesOutput.trim().split('\n');
+    const changes = [];
+    const oneMonthAgo = new Date();
+    oneMonthAgo.setDate(oneMonthAgo.getDate() - 30);
+
+    for (const line of changeLines) {
+      // Parse: Change 1871962 on 2026/07/06 by akanksha.singh@akanksha.singh_dev-vm_5181 'WSC-7131: Add "Allow...'
+      const match = line.match(/Change (\d+) on (\d{4}\/\d{2}\/\d{2}) by ([^\s]+) '([^']*)'/);
+      if (!match) continue;
+
+      const [, changeNum, dateStr, authorEmail, description] = match;
+      const [year, month, day] = dateStr.split('/');
+      const changeDate = new Date(`${year}-${month}-${day}`);
+
+      if (changeDate < oneMonthAgo && changes.length > 0) {
+        break;
+      }
+
+      // Extract author name from email (part before @)
+      const author = authorEmail.split('@')[0];
+
+      // Extract ticket number from description
+      const ticketMatch = description.match(/([A-Z]+-\d+)/);
+      const ticketNum = ticketMatch ? ticketMatch[1] : '-';
+
+      const date = changeDate.toISOString().split('T')[0];
+
+      changes.push({
+        buildNum: changeNum,
+        date: date,
+        ticketNum: ticketNum,
+        details: description.substring(0, 100),
+        author: author
+      });
+
+      if (changes.length >= maxChanges) break;
+    }
+
+    console.log('[P4] Fetched', changes.length, 'changes from last 30 days');
+    return changes;
+  } catch (error) {
+    console.error('[P4] Error fetching changes:', error.message);
+    return [];
   }
 }
 
