@@ -7,6 +7,8 @@ export async function fetchReadyClusterTests(config) {
     const apiToken = config.jenkins.apiToken;
 
     const jobUrl = `${baseUrl}${jobPath}api/json`;
+    console.log('[ReadyCluster] Fetching from:', jobUrl);
+
     const response = await axios.get(jobUrl, {
       auth: { username: 'mgujar', password: apiToken },
       timeout: 10000
@@ -14,6 +16,7 @@ export async function fetchReadyClusterTests(config) {
 
     const jobData = response.data;
     const lastBuild = jobData.lastBuild;
+    console.log('[ReadyCluster] Got job data, lastBuild:', lastBuild?.number);
 
     if (!lastBuild) {
       return {
@@ -118,10 +121,13 @@ export async function fetchReadyClusterTests(config) {
       console.log('[ReadyCluster] Found', recentChanges.length, 'changes from last month');
     } catch (error) {
       console.warn('[ReadyCluster] Could not fetch changes:', error.message);
+      console.warn('[ReadyCluster] Error details:', error.response?.status, error.response?.statusText);
+      console.warn('[ReadyCluster] Tried URL:', `${baseUrl}${jobPath}api/json?tree=builds[...]`);
     }
 
     // Use defaults if no changes found
     if (recentChanges.length === 0) {
+      console.warn('[ReadyCluster] No changes fetched from Jenkins, using fallback');
       recentChanges = getDefaultChanges();
     }
 
