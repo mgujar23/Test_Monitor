@@ -69,7 +69,12 @@ export default function Section({ title, data, sectionKey, onClickMetric }) {
                   className="w-full text-left flex items-center gap-3 hover:bg-dark-border/50 p-4 rounded transition-colors"
                 >
                   <span className="text-lg">{isChangesExpanded ? '▼' : '▶'}</span>
-                  <h3 className="text-sm font-semibold text-gray-300">Recent Changes (Last Month)</h3>
+                  <div className="flex-1">
+                    <h3 className="text-sm font-semibold text-gray-300">Recent Changes (Last Month)</h3>
+                    <p className="text-xs text-gray-500 mt-1">
+                      (Change on repo: //code_SaaS/csg_service/portal_ui/dev/portal)
+                    </p>
+                  </div>
                 </button>
 
                 {isChangesExpanded && (
