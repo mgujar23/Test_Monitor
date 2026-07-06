@@ -275,7 +275,7 @@ export default function Section({ title, data, sectionKey, onClickMetric }) {
                           <th className="text-left px-3 py-2">Status</th>
                           <th className="text-left px-3 py-2">Last passed</th>
                           <th className="text-left px-3 py-2">Recent changes</th>
-                          <th className="text-left px-3 py-2">View Diff</th>
+                          <th className="text-left px-3 py-2">Suggested fix</th>
                         </tr>
                       </thead>
                       <tbody>
