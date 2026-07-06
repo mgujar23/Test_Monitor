@@ -560,7 +560,6 @@ export default function Section({ title, data, sectionKey, onClickMetric }) {
           ))}
         </div>
       )}
-        </div>
 
         {/* Diff Modal - Outside main div to avoid overflow-hidden clipping */}
         {showDiffModal && currentDiff && (
