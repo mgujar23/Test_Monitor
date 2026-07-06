@@ -59,12 +59,12 @@ export async function fetchReadyClusterTests(config) {
       });
     }
 
-    // Fetch recent changes from the job's last 10 builds
+    // Fetch recent changes from the job's last 100 builds (covers ~1 month)
     let recentChanges = [];
     try {
-      // Get list of recent builds
-      const buildsUrl = `${baseUrl}${jobPath}api/json?tree=builds[number,timestamp,result,changeSet[items[author[fullName],msg,timestamp]]]`;
-      console.log('[ReadyCluster] Fetching build history...');
+      // Get list of recent builds (fetch last 100 builds to cover ~1 month)
+      const buildsUrl = `${baseUrl}${jobPath}api/json?tree=builds[number,timestamp,result,changeSet[items[author[fullName],msg,timestamp]]]&excludedChangeTypes=excluded`;
+      console.log('[ReadyCluster] Fetching build history from last 100 builds...');
 
       const buildsResponse = await axios.get(buildsUrl, {
         auth: { username: 'mgujar', password: apiToken },
@@ -72,9 +72,18 @@ export async function fetchReadyClusterTests(config) {
       });
 
       const builds = buildsResponse.data.builds || [];
+      const oneMonthAgo = new Date();
+      oneMonthAgo.setDate(oneMonthAgo.getDate() - 30);
 
-      // Extract changes from the last 10 builds
-      builds.slice(0, 10).forEach((build, idx) => {
+      // Extract changes from the last 100 builds or last 30 days (whichever is more)
+      builds.slice(0, 100).forEach((build, idx) => {
+        const buildDate = new Date(build.timestamp);
+
+        // Stop if we've gone past 1 month
+        if (buildDate < oneMonthAgo && recentChanges.length > 0) {
+          return;
+        }
+
         if (build.changeSet && build.changeSet.items && build.changeSet.items.length > 0) {
           build.changeSet.items.forEach(item => {
             const message = item.msg || '';
@@ -101,12 +110,12 @@ export async function fetchReadyClusterTests(config) {
               author: author
             });
 
-            if (recentChanges.length >= 20) return;
+            if (recentChanges.length >= 100) return;
           });
         }
       });
 
-      console.log('[ReadyCluster] Found', recentChanges.length, 'changes with authors');
+      console.log('[ReadyCluster] Found', recentChanges.length, 'changes from last month');
     } catch (error) {
       console.warn('[ReadyCluster] Could not fetch changes:', error.message);
     }

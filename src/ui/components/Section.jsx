@@ -74,24 +74,24 @@ export default function Section({ title, data, sectionKey, onClickMetric }) {
 
                 {isChangesExpanded && (
                   <div className="border-t border-dark-border p-4">
-                    <div className="overflow-x-auto border border-dark-border rounded">
+                    <div className="overflow-y-auto overflow-x-auto border border-dark-border rounded" style={{ maxHeight: '500px' }}>
                       <table className="w-full text-xs text-gray-300">
-                        <thead className="bg-dark-card border-b border-dark-border">
+                        <thead className="bg-dark-card border-b border-dark-border sticky top-0">
                           <tr>
-                            <th className="text-left px-3 py-2">Build #</th>
-                            <th className="text-left px-3 py-2">Date</th>
-                            <th className="text-left px-3 py-2">Ticket #</th>
-                            <th className="text-left px-3 py-2">Details</th>
-                            <th className="text-left px-3 py-2">Author</th>
+                            <th className="text-left px-3 py-2 min-w-[70px]">Build #</th>
+                            <th className="text-left px-3 py-2 min-w-[80px]">Date</th>
+                            <th className="text-left px-3 py-2 min-w-[70px]">Ticket #</th>
+                            <th className="text-left px-3 py-2 min-w-[200px]">Details</th>
+                            <th className="text-left px-3 py-2 min-w-[120px]">Author</th>
                           </tr>
                         </thead>
                         <tbody>
-                          {data.changes.slice(0, 20).map((change, idx) => (
+                          {data.changes.map((change, idx) => (
                             <tr key={idx} className="border-b border-dark-border hover:bg-dark-border/30">
                               <td className="px-3 py-2 text-gray-300 font-semibold">{change.buildNum || '-'}</td>
                               <td className="px-3 py-2 text-gray-400">{change.date || '-'}</td>
                               <td className="px-3 py-2 text-blue-400">{change.ticketNum || '-'}</td>
-                              <td className="px-3 py-2 max-w-xs truncate">{change.details || '-'}</td>
+                              <td className="px-3 py-2 truncate text-gray-400">{change.details || '-'}</td>
                               <td className="px-3 py-2 text-green-300 font-semibold">{change.author || '-'}</td>
                             </tr>
                           ))}
