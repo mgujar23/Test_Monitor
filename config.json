@@ -12,8 +12,8 @@
     "portalUrl": "https://cluster-c30.dev-rd.forcepoint.net/selenium/portal_results/"
   },
   "git": {
-    "repoPath": "/path/to/code_SaaS/csg_service/portal_ui",
-    "branch": "dev/portal",
+    "repoPath": "/Users/minal.gujar/.claude/projects/test-monitor",
+    "branch": "main",
     "testFilePatterns": [
       "*_test.py",
       "*Test.java",
