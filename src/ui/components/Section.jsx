@@ -177,6 +177,7 @@ export default function Section({ title, data, sectionKey, onClickMetric }) {
               <button
                 key={metric.key}
                 onClick={() => {
+                  setIsExpanded(true);
                   setSelectedMetric(selectedMetric === metric.key ? null : metric.key);
                   setSelectedArea(null);
                   setCurrentPage(0);
