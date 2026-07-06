@@ -332,6 +332,7 @@ export default function Section({ title, data, sectionKey, onClickMetric }) {
     const passingPercentage = data.total > 0 ? ((passed / data.total) * 100).toFixed(2) : '0.00';
 
     return (
+      <>
       <div className="bg-dark-card border border-dark-border rounded-lg p-4 mb-4">
         <div className="flex items-center justify-between mb-4">
           <div>
@@ -608,5 +609,6 @@ export default function Section({ title, data, sectionKey, onClickMetric }) {
         </div>
       </div>
     )}
-  </>;
+    </>
+  );
 }
