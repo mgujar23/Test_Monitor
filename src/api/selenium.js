@@ -16,55 +16,32 @@ export async function fetchSeleniumTests(portalUrl) {
 
     // Parse total tests from summary
     const totalMatch = html.match(/Total tests run, excluding old<\/td>\s*<td[^>]*>(\d+)<\/td>/);
-    const totalTests = totalMatch ? parseInt(totalMatch[1]) : 280;
+    const totalTests = totalMatch ? parseInt(totalMatch[1]) : 0;
 
-    // Parse failed count from test-failed spans
-    let totalFailed = 0;
-    const failedRegex = /title="Failed"\s*>(\d+)</g;
-    let failedMatch;
-    while ((failedMatch = failedRegex.exec(html)) !== null) {
-      totalFailed += parseInt(failedMatch[1]);
-    }
-
-    // Parse test areas with their passed/failed counts
-    const areaRegex = /id="dir-([^"]+)"/g;
+    // Extract area data from test-dir-summary rows
+    // Pattern: data-dir="dir-AREANAME" ... Total: X ... Passed: Y
     const areas = [];
+    let totalFailed = 0;
+
+    const areaPattern = /data-dir="dir-([^"]+)"[^>]*>[\s\S]*?<span[^>]*title="Total[^>]*>(\d+)<\/span>[\s\S]*?<span class="test-passed"[^>]*>(\d+)<\/span>/g;
     let match;
-    const areaMatches = [];
-    while ((match = areaRegex.exec(html)) !== null) {
-      areaMatches.push({
-        name: match[1],
-        index: match.index
-      });
-    }
 
-    // Extract counts for each area (pattern: passed count, failed count, time)
-    // Look for area summary rows with align="center" containing test counts
-    const passfailPattern = /<tr[^>]*class="test-dir-summary[^"]*"[^>]*>[\s\S]*?<td[^>]*align="center"[^>]*>(\d+)<\/td>\s*<td[^>]*align="center"[^>]*>(\d+)<\/td>/g;
-    const areaCounts = [];
-    while ((match = passfailPattern.exec(html)) !== null) {
-      areaCounts.push({
-        passed: parseInt(match[1]),
-        failed: parseInt(match[2])
-      });
-    }
-
-    // Create area entries with their actual counts
-    areaMatches.forEach((areaMatch, idx) => {
-      const areaName = areaMatch.name
+    while ((match = areaPattern.exec(html)) !== null) {
+      const areaName = match[1]
         .replace(/_/g, ' ')
         .replace(/([A-Z])/g, ' $1')
         .trim();
 
-      const counts = areaCounts[idx] || { passed: 0, failed: 0 };
-      const total = counts.passed + counts.failed;
+      const total = parseInt(match[2]);
+      const passed = parseInt(match[3]);
+      const failed = total - passed;
+      totalFailed += failed;
 
-      // For Selenium, create test objects that match the actual pass/fail counts
-      // The details table filters by status, so we need the right number of each
+      // Create test objects matching actual pass/fail counts
       const tests = [];
 
-      // Add individual PASSED test entries (one per passed test)
-      for (let i = 1; i <= Math.min(counts.passed, 10); i++) {
+      // Add individual PASSED test entries (max 10)
+      for (let i = 1; i <= Math.min(passed, 10); i++) {
         tests.push({
           filename: `test_${areaName.toLowerCase().replace(/ /g, '_')}_pass_${i}.py`,
           status: 'PASS',
@@ -74,8 +51,8 @@ export async function fetchSeleniumTests(portalUrl) {
         });
       }
 
-      // Add individual FAILED test entries (one per failed test)
-      for (let i = 1; i <= Math.min(counts.failed, 10); i++) {
+      // Add individual FAILED test entries (max 10)
+      for (let i = 1; i <= Math.min(failed, 10); i++) {
         tests.push({
           filename: `test_${areaName.toLowerCase().replace(/ /g, '_')}_fail_${i}.py`,
           status: 'FAIL',
@@ -85,10 +62,10 @@ export async function fetchSeleniumTests(portalUrl) {
         });
       }
 
-      // If counts exceed 10, add a summary entry showing additional tests
-      if (counts.passed > 10) {
+      // Add summary entries if counts exceed 10
+      if (passed > 10) {
         tests.push({
-          filename: `... and ${counts.passed - 10} more passing tests`,
+          filename: `... and ${passed - 10} more passing tests`,
           status: 'PASS',
           lastPassed: 'Latest Build',
           recentChanges: 'Additional passing tests',
@@ -96,9 +73,9 @@ export async function fetchSeleniumTests(portalUrl) {
         });
       }
 
-      if (counts.failed > 10) {
+      if (failed > 10) {
         tests.push({
-          filename: `... and ${counts.failed - 10} more failing tests`,
+          filename: `... and ${failed - 10} more failing tests`,
           status: 'FAIL',
           lastPassed: 'Build #N/A',
           recentChanges: 'Additional test failures',
@@ -106,7 +83,7 @@ export async function fetchSeleniumTests(portalUrl) {
         });
       }
 
-      // If no data, show area summary
+      // If no test data, show area summary
       if (tests.length === 0) {
         tests.push({
           filename: `${total} total tests in area`,
@@ -120,13 +97,13 @@ export async function fetchSeleniumTests(portalUrl) {
       areas.push({
         name: areaName,
         total: total,
-        failed: counts.failed,
+        failed: failed,
         stale: 0,
         tests: tests
       });
-    });
+    }
 
-    console.log(`[Selenium] Parsed ${totalTests} total tests, 0 passed, ${totalFailed} failed`);
+    console.log(`[Selenium] Parsed ${totalTests} total tests across ${areas.length} areas, ${totalFailed} failed`);
 
     return {
       total: totalTests,
