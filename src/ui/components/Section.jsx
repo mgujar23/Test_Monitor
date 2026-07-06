@@ -13,6 +13,8 @@ export default function Section({ title, data, sectionKey, onClickMetric }) {
   const [showDiffModal, setShowDiffModal] = useState(false);
   const [currentDiff, setCurrentDiff] = useState(null);
   const [currentTestName, setCurrentTestName] = useState(null);
+  const [selectedYear, setSelectedYear] = useState(null);
+  const [selectedYearArea, setSelectedYearArea] = useState(null);
 
   if (!data) {
     return null;
@@ -198,9 +200,6 @@ export default function Section({ title, data, sectionKey, onClickMetric }) {
 
   // Special handling for newTestsAdded (yearly with collapsible details)
   if (sectionKey === 'newTestsAdded') {
-    const [selectedYear, setSelectedYear] = useState(null);
-    const [selectedYearArea, setSelectedYearArea] = useState(null);
-
     return (
       <div className="bg-dark-card border border-dark-border rounded-lg p-4 mb-4">
         <button
@@ -329,199 +328,9 @@ export default function Section({ title, data, sectionKey, onClickMetric }) {
     const totalPages = Math.ceil(allTests.length / ROWS_PER_PAGE);
     const visibleTests = allTests.slice(currentPage * ROWS_PER_PAGE, (currentPage + 1) * ROWS_PER_PAGE);
 
-    const passingPercentage = data.total > 0 ? ((passed / data.total) * 100).toFixed(2) : '0.00';
-
     return (
       <>
-        <div className="bg-dark-card border border-dark-border rounded-lg p-4 mb-4">
-          <div className="flex items-center justify-between mb-4">
-          <div>
-            <button
-              onClick={() => setIsExpanded(!isExpanded)}
-              className="flex items-center gap-3 hover:bg-dark-border/50 p-2 rounded transition-colors"
-            >
-              <span className="text-lg">{isExpanded ? '▼' : '▶'}</span>
-              <h2 className="text-xl font-bold text-white">{title}</h2>
-            </button>
-          </div>
-          <div className="text-right">
-            <div className="text-2xl font-bold text-passed">{passingPercentage}%</div>
-            <div className="text-xs text-gray-400">passing</div>
-          </div>
-        </div>
-
-        {/* Level 1: Always visible metric boxes */}
-        <div className="grid grid-cols-4 gap-3 mb-4">
-          {[
-            { key: 'total', label: 'Total tests', value: data.total || 0 },
-            { key: 'failed', label: 'Failed tests', value: data.failed || 0 },
-            { key: 'passed', label: 'Pass tests', value: passed },
-            { key: 'stale', label: 'Stale tests', value: data.stale || 0 }
-          ].map((metric) => (
-            <button
-              key={metric.key}
-              onClick={() => {
-                setSelectedMetric(selectedMetric === metric.key ? null : metric.key);
-                setSelectedArea(null);
-                setCurrentPage(0);
-                if (selectedMetric !== metric.key) setIsExpanded(true);
-              }}
-              className={`p-3 rounded border transition-colors ${
-                selectedMetric === metric.key
-                  ? 'bg-dark-border border-blue-500 border-2'
-                  : 'bg-dark-bg border-dark-border hover:border-gray-500'
-              }`}
-            >
-              <div className="text-gray-400 text-xs mb-1">{metric.label}</div>
-              <div className={`text-2xl font-bold ${
-                metric.key === 'failed' ? 'text-failed' :
-                metric.key === 'stale' ? 'text-yellow-400' :
-                metric.key === 'passed' ? 'text-passed' :
-                'text-white'
-              }`}>
-                {metric.value}
-              </div>
-            </button>
-          ))}
-        </div>
-
-        {/* Level 2: Areas section */}
-        {isExpanded && selectedMetric && data.areas && data.areas.length > 0 && (
-          <div className="mt-4 bg-dark-bg rounded border border-dark-border p-4 mb-4">
-            <div className="text-sm font-semibold text-gray-300 mb-3">
-              {selectedMetric === 'total' && 'Select an Area'}
-              {selectedMetric === 'failed' && 'Areas with Failures'}
-              {selectedMetric === 'stale' && 'Stale Test Areas'}
-            </div>
-            <div className="overflow-y-auto overflow-x-hidden border border-dark-border rounded p-3" style={{ maxHeight: '340px' }}>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-              {data.areas
-                .filter(area => {
-                  if (selectedMetric === 'failed') return area.failed > 0;
-                  if (selectedMetric === 'stale') return area.stale > 0;
-                  return true;
-                })
-                .map((area) => {
-                  const areaIndex = data.areas.indexOf(area);
-                  return (
-                  <button
-                    key={areaIndex}
-                    onClick={() => {
-                      setSelectedArea(selectedArea === areaIndex ? null : areaIndex);
-                      setCurrentPage(0);
-                    }}
-                    className={`p-3 rounded border transition-colors text-left ${
-                      selectedArea === areaIndex
-                        ? 'bg-dark-border border-blue-500 border-2'
-                        : 'bg-dark-card border-dark-border hover:border-gray-500'
-                    }`}
-                  >
-                    <div className="text-gray-400 text-xs">{area.name}</div>
-                    <div className="text-xl font-bold text-white">
-                      {selectedMetric === 'failed' ? area.failed :
-                       selectedMetric === 'stale' ? area.stale :
-                       selectedMetric === 'passed' ? (area.total - area.failed) :
-                       area.total}
-                    </div>
-                  </button>
-                  );
-                })}
-            </div>
-            </div>
-          </div>
-        )}
-
-        {/* Level 3: Details table with pagination (only show if area selected) */}
-        {isExpanded && selectedMetric && selectedArea !== null && (
-          <div className="mt-4 bg-dark-card rounded border border-dark-border p-4">
-            <div className="text-sm font-semibold text-gray-300 mb-3">
-              Details ({allTests.length} tests)
-            </div>
-            <div className="overflow-y-auto border border-dark-border rounded" style={{ maxHeight: '400px' }}>
-              <table className="w-full text-xs text-gray-300">
-                <thead className="sticky top-0 bg-dark-bg border-b border-dark-border">
-                  <tr>
-                    <th className="text-left px-3 py-2">File name</th>
-                    <th className="text-left px-3 py-2">Status</th>
-                    <th className="text-left px-3 py-2">Last passed</th>
-                    <th className="text-left px-3 py-2">Recent changes</th>
-                    <th className="text-left px-3 py-2">Suggested fix</th>
-                    <th className="text-left px-3 py-2">View Diff</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {visibleTests.length > 0 ? (
-                    visibleTests.map((test, idx) => (
-                      <tr key={idx} className="border-b border-dark-border hover:bg-dark-border/30">
-                        <td className="px-3 py-2">{test.filename}</td>
-                        <td className="px-3 py-2">
-                          <span className={`px-2 py-1 rounded text-xs font-semibold ${
-                            test.status === 'PASS' ? 'bg-green-900 text-green-200' :
-                            test.status === 'FAIL' ? 'bg-red-900 text-red-200' :
-                            'bg-yellow-900 text-yellow-200'
-                          }`}>
-                            {test.status}
-                          </span>
-                        </td>
-                        <td className="px-3 py-2">{test.lastPassed || 'N/A'}</td>
-                        <td className="px-3 py-2 max-w-xs truncate">{test.recentChanges || 'N/A'}</td>
-                        <td className="px-3 py-2">{test.suggestedFix || 'N/A'}</td>
-                        <td className="px-3 py-2">
-                          <button
-                            onClick={() => {
-                              const diff = generateTestFixDiff({
-                                name: test.filename,
-                                className: test.filename,
-                                status: test.status
-                              });
-                              setCurrentDiff(diff);
-                              setCurrentTestName(test.filename);
-                              setShowDiffModal(true);
-                            }}
-                            className="px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded font-semibold transition-colors"
-                          >
-                            View
-                          </button>
-                        </td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan="6" className="px-3 py-4 text-center text-gray-500">No tests found</td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-            {totalPages > 1 && (
-              <div className="mt-3 flex items-center justify-between text-xs text-gray-400">
-                <span>Page {currentPage + 1} of {totalPages}</span>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
-                    disabled={currentPage === 0}
-                    className="px-2 py-1 bg-dark-bg border border-dark-border rounded disabled:opacity-50"
-                  >
-                    ← Prev
-                  </button>
-                  <button
-                    onClick={() => setCurrentPage(Math.min(totalPages - 1, currentPage + 1))}
-                    disabled={currentPage === totalPages - 1}
-                    className="px-2 py-1 bg-dark-bg border border-dark-border rounded disabled:opacity-50"
-                  >
-                    Next →
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  return (
-    <div className="bg-dark-card border border-dark-border rounded-lg p-4 mb-4 overflow-hidden">
+        <div className="bg-dark-card border border-dark-border rounded-lg p-4 mb-4 overflow-hidden">
       <button
         onClick={() => setIsExpanded(!isExpanded)}
         className="w-full text-left flex items-center gap-3 hover:bg-dark-border/50 p-2 rounded transition-colors"
@@ -560,54 +369,55 @@ export default function Section({ title, data, sectionKey, onClickMetric }) {
           ))}
         </div>
       )}
+      </div>
 
-        {/* Diff Modal - Outside main div to avoid overflow-hidden clipping */}
-        {showDiffModal && currentDiff && (
-          <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-[60]">
-            <div className="bg-dark-card border border-dark-border rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
-              {/* Header */}
-              <div className="flex items-center justify-between p-6 border-b border-dark-border bg-dark-card sticky top-0">
-                <div>
-                  <h3 className="text-lg font-bold text-white">Suggested Code Changes</h3>
-                  <p className="text-xs text-gray-500 mt-1">Diff for {currentTestName}</p>
-                </div>
-              </div>
-
-              {/* Diff Content */}
-              <div className="flex-1 overflow-y-auto p-6 bg-dark-bg">
-                <pre className="text-xs text-gray-300 font-mono whitespace-pre-wrap break-words bg-dark-card border border-dark-border rounded p-4">
-{currentDiff}
-                </pre>
-              </div>
-
-              {/* Actions */}
-              <div className="flex justify-end gap-2 p-6 border-t border-dark-border bg-dark-card">
-                <button
-                  onClick={() => setShowDiffModal(false)}
-                  className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded font-semibold text-sm transition-colors"
-                >
-                  Dismiss
-                </button>
-                <button
-                  onClick={() => {
-                    const element = document.createElement('a');
-                    element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(currentDiff));
-                    element.setAttribute('download', `fix-${currentTestName}.patch`);
-                    element.style.display = 'none';
-                    document.body.appendChild(element);
-                    element.click();
-                    document.body.removeChild(element);
-                    alert('Patch downloaded to your Downloads folder!');
-                    setShowDiffModal(false);
-                  }}
-                  className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded font-semibold text-sm transition-colors"
-                >
-                  Download
-                </button>
+      {/* Diff Modal - rendered at root level to avoid overflow-hidden clipping */}
+      {showDiffModal && currentDiff && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-[60]">
+          <div className="bg-dark-card border border-dark-border rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+            {/* Header */}
+            <div className="flex items-center justify-between p-6 border-b border-dark-border bg-dark-card sticky top-0">
+              <div>
+                <h3 className="text-lg font-bold text-white">Suggested Code Changes</h3>
+                <p className="text-xs text-gray-500 mt-1">Diff for {currentTestName}</p>
               </div>
             </div>
+
+            {/* Diff Content */}
+            <div className="flex-1 overflow-y-auto p-6 bg-dark-bg">
+              <pre className="text-xs text-gray-300 font-mono whitespace-pre-wrap break-words bg-dark-card border border-dark-border rounded p-4">
+{currentDiff}
+              </pre>
+            </div>
+
+            {/* Actions */}
+            <div className="flex justify-end gap-2 p-6 border-t border-dark-border bg-dark-card">
+              <button
+                onClick={() => setShowDiffModal(false)}
+                className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded font-semibold text-sm transition-colors"
+              >
+                Dismiss
+              </button>
+              <button
+                onClick={() => {
+                  const element = document.createElement('a');
+                  element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(currentDiff));
+                  element.setAttribute('download', `fix-${currentTestName}.patch`);
+                  element.style.display = 'none';
+                  document.body.appendChild(element);
+                  element.click();
+                  document.body.removeChild(element);
+                  alert('Patch downloaded to your Downloads folder!');
+                  setShowDiffModal(false);
+                }}
+                className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded font-semibold text-sm transition-colors"
+              >
+                Download
+              </button>
+            </div>
           </div>
-        )}
+        </div>
+      )}
       </>
     );
 }
