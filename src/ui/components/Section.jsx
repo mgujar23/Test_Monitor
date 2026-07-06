@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import StatRow from './StatRow';
+import { generateTestFixDiff } from '../utils/generateTestFix';
 
 const ROWS_PER_PAGE = 10;
 
@@ -441,6 +442,7 @@ export default function Section({ title, data, sectionKey, onClickMetric }) {
                     <th className="text-left px-3 py-2">Last passed</th>
                     <th className="text-left px-3 py-2">Recent changes</th>
                     <th className="text-left px-3 py-2">Suggested fix</th>
+                    <th className="text-left px-3 py-2">View Diff</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -460,11 +462,33 @@ export default function Section({ title, data, sectionKey, onClickMetric }) {
                         <td className="px-3 py-2">{test.lastPassed || 'N/A'}</td>
                         <td className="px-3 py-2 max-w-xs truncate">{test.recentChanges || 'N/A'}</td>
                         <td className="px-3 py-2">{test.suggestedFix || 'N/A'}</td>
+                        <td className="px-3 py-2">
+                          <button
+                            onClick={() => {
+                              const diff = generateTestFixDiff({
+                                name: test.filename,
+                                className: test.filename,
+                                status: test.status
+                              });
+                              const element = document.createElement('a');
+                              element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(diff));
+                              element.setAttribute('download', `fix-${test.filename}.patch`);
+                              element.style.display = 'none';
+                              document.body.appendChild(element);
+                              element.click();
+                              document.body.removeChild(element);
+                              alert('Diff downloaded! Check your downloads folder.');
+                            }}
+                            className="px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded font-semibold transition-colors"
+                          >
+                            Download
+                          </button>
+                        </td>
                       </tr>
                     ))
                   ) : (
                     <tr>
-                      <td colSpan="5" className="px-3 py-4 text-center text-gray-500">No tests found</td>
+                      <td colSpan="6" className="px-3 py-4 text-center text-gray-500">No tests found</td>
                     </tr>
                   )}
                 </tbody>
