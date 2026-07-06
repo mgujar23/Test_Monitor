@@ -1,6 +1,5 @@
 import axios from 'axios';
 import https from 'https';
-import { execSync } from 'child_process';
 
 export async function fetchReadyClusterTests(config) {
   try {
@@ -171,37 +170,65 @@ export async function fetchReadyClusterTests(config) {
     }
 
     // Try to fetch from Perforce if Jenkins has no changeSet
-    if (recentChanges.length === 0 && config.perforce) {
-      console.warn('[ReadyCluster] No changes in Jenkins, trying Perforce...');
+    if (recentChanges.length === 0) {
+      console.warn('[ReadyCluster] Still no changes from Jenkins, trying Perforce via p4 CLI...');
       try {
-        const p4Changes = getPerforceChanges(config.perforce.depotPath, 100);
-        if (p4Changes.length > 0) {
-          recentChanges = p4Changes;
-          console.log('[ReadyCluster] Loaded', recentChanges.length, 'changes from Perforce');
+        const { execSync } = await import('child_process');
+        const p4Config = config.perforce;
+        if (p4Config && p4Config.serverUrl) {
+          console.log('[ReadyCluster] Fetching changes from main repo: //code_SaaS/csg_service');
+
+          // Use p4 CLI to fetch recent changes from main repo
+          const changesCmd = `p4 -p ${p4Config.serverUrl} -u ${p4Config.username} changes -m 100 "//code_SaaS/csg_service/..."`;
+          const changesOutput = execSync(changesCmd, {
+            encoding: 'utf-8',
+            env: { ...process.env, P4PASSWD: p4Config.apiToken || p4Config.password }
+          });
+
+          const changeLines = changesOutput.trim().split('\n').filter(line => line.length > 0);
+          console.log('[ReadyCluster] Got', changeLines.length, 'changes from Perforce');
+
+          const oneMonthAgo = new Date();
+          oneMonthAgo.setDate(oneMonthAgo.getDate() - 30);
+
+          for (const changeLine of changeLines.slice(0, 100)) {
+            // Format: Change 12345 on 2026/07/06 by user@workspace 'description'
+            const match = changeLine.match(/Change\s+(\d+)\s+on\s+(\d{4}\/\d{2}\/\d{2})\s+by\s+([^\s@]+)@\S+\s+'([^']*)/);
+            if (!match) continue;
+
+            const [, changeNum, dateStr, author, description] = match;
+            const [year, month, day] = dateStr.split('/');
+            const changeDate = new Date(`${year}-${month}-${day}`);
+
+            if (changeDate < oneMonthAgo && recentChanges.length > 0) break;
+
+            const ticketMatch = description.match(/([A-Z]+-\d+)/);
+            const ticketNum = ticketMatch ? ticketMatch[1] : '-';
+
+            recentChanges.push({
+              buildNum: changeNum,
+              date: `${year}-${month}-${day}`,
+              ticketNum: ticketNum,
+              details: description.substring(0, 100),
+              author: author
+            });
+
+            if (recentChanges.length >= 100) break;
+          }
+
+          console.log('[ReadyCluster] Extracted', recentChanges.length, 'changes from last month');
+        } else {
+          console.warn('[ReadyCluster] Perforce config not found');
         }
       } catch (error) {
         console.error('[ReadyCluster] Perforce fetch error:', error.message);
       }
     }
 
-    // Fall back to Git repository if Perforce has no changes
-    if (recentChanges.length === 0 && config.git && config.git.repoPath) {
-      console.warn('[ReadyCluster] No changes in Perforce, trying Git repository...');
-      try {
-        const gitCommits = getGitCommits(config.git.repoPath, 100);
-        if (gitCommits.length > 0) {
-          recentChanges = gitCommits;
-          console.log('[ReadyCluster] Loaded', recentChanges.length, 'commits from Git');
-        }
-      } catch (error) {
-        console.error('[ReadyCluster] Git fetch error:', error.message);
-      }
-    }
-
-    // Report status
+    // No fallback - only show real data from Jenkins changeSet or Perforce
     if (recentChanges.length === 0) {
-      console.warn('[ReadyCluster] No real changes found from Jenkins, Perforce, or Git');
-      console.warn('[ReadyCluster] Recent Changes section will be empty');
+      console.warn('[ReadyCluster] No real changes found - Jenkins has no changeSet and Perforce is unavailable');
+      console.warn('[ReadyCluster] Recent Changes section will be empty until Perforce connectivity is restored');
     }
 
     return {
@@ -225,115 +252,9 @@ export async function fetchReadyClusterTests(config) {
   }
 }
 
-function getPerforceChanges(depotPath, maxChanges = 100) {
-  try {
-    console.log('[P4] Fetching changes from:', depotPath);
-
-    // Set P4 environment variables
-    process.env.P4PORT = 'perforce.cicd.cloud.fpdev.io:1666';
-    process.env.P4USER = 'minal.gujar';
-
-    // Fetch recent changes using p4 changes command
-    const changesCmd = `/opt/homebrew/bin/p4 changes -m ${maxChanges} ${depotPath}/...`;
-    const changesOutput = execSync(changesCmd, { encoding: 'utf-8', timeout: 30000 });
-
-    const changeLines = changesOutput.trim().split('\n');
-    const changes = [];
-    const oneMonthAgo = new Date();
-    oneMonthAgo.setDate(oneMonthAgo.getDate() - 30);
-
-    for (const line of changeLines) {
-      // Parse: Change 1871962 on 2026/07/06 by akanksha.singh@akanksha.singh_dev-vm_5181 'WSC-7131: Add "Allow...'
-      const match = line.match(/Change (\d+) on (\d{4}\/\d{2}\/\d{2}) by ([^\s]+) '([^']*)'/);
-      if (!match) continue;
-
-      const [, changeNum, dateStr, authorEmail, description] = match;
-      const [year, month, day] = dateStr.split('/');
-      const changeDate = new Date(`${year}-${month}-${day}`);
-
-      if (changeDate < oneMonthAgo && changes.length > 0) {
-        break;
-      }
-
-      // Extract author name from email (part before @)
-      const author = authorEmail.split('@')[0];
-
-      // Extract ticket number from description
-      const ticketMatch = description.match(/([A-Z]+-\d+)/);
-      const ticketNum = ticketMatch ? ticketMatch[1] : '-';
-
-      const date = changeDate.toISOString().split('T')[0];
-
-      changes.push({
-        buildNum: changeNum,
-        date: date,
-        ticketNum: ticketNum,
-        details: description.substring(0, 100),
-        author: author
-      });
-
-      if (changes.length >= maxChanges) break;
-    }
-
-    console.log('[P4] Fetched', changes.length, 'changes from last 30 days');
-    return changes;
-  } catch (error) {
-    console.error('[P4] Error fetching changes:', error.message);
-    return [];
-  }
-}
-
-function getGitCommits(repoPath, maxCommits = 100) {
-  try {
-    console.log('[Git] Fetching commits from:', repoPath);
-
-    // Use git log to get recent commits
-    // Format: hash|author|email|date|message
-    const cmd = `cd "${repoPath}" && git log --pretty=format:"%h|%an|%ae|%ai|%s" -${maxCommits}`;
-    const output = execSync(cmd, { encoding: 'utf-8', timeout: 10000 });
-
-    const lines = output.trim().split('\n');
-    const commits = [];
-    const oneMonthAgo = new Date();
-    oneMonthAgo.setDate(oneMonthAgo.getDate() - 30);
-
-    for (const line of lines) {
-      const parts = line.split('|');
-      if (parts.length < 5) continue;
-
-      const [hash, author, email, dateStr, message] = parts;
-      const commitDate = new Date(dateStr);
-
-      if (commitDate < oneMonthAgo && commits.length > 0) {
-        break;
-      }
-
-      const ticketMatch = message.match(/([A-Z]+-\d+)/);
-      const ticketNum = ticketMatch ? ticketMatch[1] : '-';
-      const date = commitDate.toISOString().split('T')[0];
-
-      commits.push({
-        buildNum: hash.substring(0, 7),
-        date: date,
-        ticketNum: ticketNum,
-        details: message.substring(0, 100),
-        author: author
-      });
-
-      if (commits.length >= maxCommits) break;
-    }
-
-    console.log('[Git] Fetched', commits.length, 'commits from last 30 days');
-    return commits;
-  } catch (error) {
-    console.error('[Git] Error fetching commits:', error.message);
-    return [];
-  }
-}
-
 function getDefaultChanges() {
   // Return empty array - no mock data
-  // Real changes should only come from Git, Jenkins changeSet, or Perforce
+  // Real changes should only come from Perforce or Jenkins changeSet
   // Only show actual author names, not team names or mock data
   return [];
 }

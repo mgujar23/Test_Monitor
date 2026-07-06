@@ -2,22 +2,35 @@ import axios from 'axios';
 
 export async function fetchSeleniumTests(portalUrl) {
   try {
-    // Fetch Selenium portal results page
-    const fullUrl = portalUrl.includes('?') ? portalUrl : portalUrl + '?all=yes';
-    const response = await axios.get(fullUrl, {
+    // Fetch Selenium portal results page using the complete URL with ?all=yes
+    const response = await axios.get(portalUrl, {
       timeout: 10000,
       headers: {
         'User-Agent': 'TestMonitor/1.0'
       }
     });
 
-    console.log('[Selenium] Fetched portal data');
+    console.log('[Selenium] Fetched portal data from:', portalUrl);
     const html = response.data;
+
+    // Extract from three specific elements only:
+    // 1. "Unique tests run" value - look for text then the next td with a number
+    const totalMatch = html.match(/Unique tests run[\s\S]*?<td[^>]*>[\s]*(\d+)/);
+    const totalTests = totalMatch ? parseInt(totalMatch[1]) : 0;
+
+    // 2. "Passed" checkbox - look for >Passed< label then find the count in width="40" td
+    const passedMatch = html.match(/>Passed<[\s\S]*?width="40"[^>]*>[\s]*(\d+)/);
+    const passedCount = passedMatch ? parseInt(passedMatch[1]) : 0;
+
+    // 3. "Failed" checkbox - look for >Failed< label then find the count
+    const failedMatch = html.match(/>Failed<[\s\S]*?<td[^>]*align="right"[^>]*>[\s]*\d+%[\s]*<\/td>[\s]*<td[^>]*align="right"[^>]*>[\s]*(\d+)/);
+    const failedCount = failedMatch ? parseInt(failedMatch[1]) : 0;
+
+    console.log(`[Selenium] Extracted: Total=${totalTests}, Passed=${passedCount}, Failed=${failedCount}`);
 
     // Extract area data from test-dir-summary rows
     // Pattern: data-dir="dir-AREANAME" ... Total: X ... Passed: Y
     const areas = [];
-    let totalTests = 0;
     let totalFailed = 0;
 
     const areaPattern = /data-dir="dir-([^"]+)"[^>]*>[\s\S]*?<span[^>]*title="Total[^>]*>(\d+)<\/span>[\s\S]*?<span class="test-passed"[^>]*>(\d+)<\/span>/g;
@@ -32,7 +45,6 @@ export async function fetchSeleniumTests(portalUrl) {
       const total = parseInt(match[2]);
       const passed = parseInt(match[3]);
       const failed = total - passed;
-      totalTests += total;
       totalFailed += failed;
 
       // Create test objects matching actual pass/fail counts

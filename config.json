@@ -9,11 +9,11 @@
     }
   },
   "selenium": {
-    "portalUrl": "https://cluster-c30.dev-rd.forcepoint.net/selenium/portal_results/"
+    "portalUrl": "https://cluster-c30.dev-rd.forcepoint.net/selenium/portal_results/?all=yes"
   },
   "git": {
-    "repoPath": "/Users/minal.gujar/.claude/projects/test-monitor",
-    "branch": "main",
+    "repoPath": "/path/to/code_SaaS/csg_service/portal_ui",
+    "branch": "dev/portal",
     "testFilePatterns": [
       "*_test.py",
       "*Test.java",
@@ -22,10 +22,10 @@
     ]
   },
   "perforce": {
-    "serverUrl": "https://perforce.cicd.cloud.fpdev.io:1666",
+    "serverUrl": "perforce.cicd.cloud.fpdev.io:1666",
     "username": "minal.gujar",
-    "password": "Minal123!",
-    "depotPath": "//code_SaaS/csg_service"
+    "apiToken": "2C2F821ECE08DA816DD91EBAF64EF419",
+    "depotPath": "//code_SaaS/csg_service/portal_ui/dev/portal/tests/selenium/portal_tests"
   },
   "app": {
     "port": 3000,
