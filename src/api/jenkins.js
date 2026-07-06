@@ -1,4 +1,5 @@
 import axios from 'axios';
+import https from 'https';
 
 export async function fetchReadyClusterTests(config) {
   try {
@@ -184,13 +185,14 @@ export async function fetchReadyClusterTests(config) {
           const changesUrl = `${p4Config.serverUrl}/api/v1/changes?path=${encodeURIComponent(p4Config.depotPath)}/...&max=100`;
           console.log('[ReadyCluster] Fetching from Perforce:', changesUrl);
 
+          const httpsAgent = new https.Agent({ rejectUnauthorized: false });
           const p4Response = await axios.get(changesUrl, {
             headers: {
               'Authorization': `Basic ${auth}`,
               'Content-Type': 'application/json'
             },
             timeout: 15000,
-            httpsAgent: { rejectUnauthorized: false }
+            httpsAgent: httpsAgent
           });
 
           const changesList = p4Response.data.changes || [];
