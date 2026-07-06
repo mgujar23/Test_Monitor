@@ -133,7 +133,44 @@ export async function fetchReadyClusterTests(config) {
 
     // Use defaults if no changes found
     if (recentChanges.length === 0) {
-      console.warn('[ReadyCluster] No changes fetched from Jenkins, using fallback');
+      console.warn('[ReadyCluster] No changes found in recent builds, trying lastSuccessfulBuild...');
+      try {
+        const successfulBuildUrl = `${baseUrl}${jobPath}lastSuccessfulBuild/api/json?tree=number,timestamp,changeSet[items[author,msg]]`;
+        const successfulResponse = await axios.get(successfulBuildUrl, {
+          auth: { username: 'mgujar', password: apiToken },
+          timeout: 10000
+        });
+
+        const successfulBuild = successfulResponse.data;
+        if (successfulBuild.changeSet && successfulBuild.changeSet.items && successfulBuild.changeSet.items.length > 0) {
+          console.log('[ReadyCluster] Got', successfulBuild.changeSet.items.length, 'changes from lastSuccessfulBuild');
+          successfulBuild.changeSet.items.forEach(item => {
+            const message = item.msg || '';
+            const ticketMatch = message.match(/([A-Z]+-\d+)/);
+            const ticketNum = ticketMatch ? ticketMatch[1] : '-';
+            const date = new Date(successfulBuild.timestamp).toISOString().split('T')[0];
+            let author = 'Unknown';
+            if (item.author) {
+              author = item.author.fullName || item.author.name || item.author.id || item.author || 'Unknown';
+            }
+
+            recentChanges.push({
+              buildNum: String(successfulBuild.number),
+              date: date,
+              ticketNum: ticketNum,
+              details: message.substring(0, 100),
+              author: author
+            });
+          });
+        }
+      } catch (error) {
+        console.warn('[ReadyCluster] Could not fetch from lastSuccessfulBuild:', error.message);
+      }
+    }
+
+    // Use defaults if still no changes found
+    if (recentChanges.length === 0) {
+      console.warn('[ReadyCluster] Still no changes, using fallback');
       recentChanges = getDefaultChanges();
     }
 
