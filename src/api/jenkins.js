@@ -65,9 +65,9 @@ export async function fetchReadyClusterTests(config) {
     // Fetch recent changes from the job's last 100 builds (covers ~1 month)
     let recentChanges = [];
     try {
-      // Get list of recent builds - use simpler API call
-      const buildsUrl = `${baseUrl}${jobPath}api/json?limit=100`;
-      console.log('[ReadyCluster] Fetching build history from last 100 builds...');
+      // Get list of recent builds with changeSet data
+      const buildsUrl = `${baseUrl}${jobPath}api/json?tree=builds[number,timestamp,changeSet[items[author,msg]]]&limit=100`;
+      console.log('[ReadyCluster] Fetching build history from:', buildsUrl);
 
       const buildsResponse = await axios.get(buildsUrl, {
         auth: { username: 'mgujar', password: apiToken },
@@ -76,6 +76,9 @@ export async function fetchReadyClusterTests(config) {
 
       const builds = buildsResponse.data.builds || [];
       console.log('[ReadyCluster] Got', builds.length, 'builds from Jenkins');
+      if (builds.length > 0) {
+        console.log('[ReadyCluster] First build:', builds[0].number, 'hasChangeSet:', !!builds[0].changeSet);
+      }
 
       const oneMonthAgo = new Date();
       oneMonthAgo.setDate(oneMonthAgo.getDate() - 30);
