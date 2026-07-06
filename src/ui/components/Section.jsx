@@ -149,7 +149,7 @@ export default function Section({ title, data, sectionKey, onClickMetric }) {
     return (
       <>
         <div className="bg-dark-card border border-dark-border rounded-lg p-4 mb-4">
-          {/* Header */}
+          {/* Header - Always Visible */}
           <div className="flex items-center justify-between mb-4">
             <div>
               <button
@@ -166,89 +166,102 @@ export default function Section({ title, data, sectionKey, onClickMetric }) {
             </div>
           </div>
 
+          {/* Metric Boxes - Always Visible */}
+          <div className="grid grid-cols-4 gap-3 mb-4">
+            {[
+              { key: 'total', label: 'Total tests', value: data.total || 0 },
+              { key: 'failed', label: 'Failed tests', value: data.failed || 0 },
+              { key: 'passed', label: 'Pass tests', value: passed },
+              { key: 'stale', label: 'Stale tests', value: data.stale || 0 }
+            ].map((metric) => (
+              <button
+                key={metric.key}
+                onClick={() => {
+                  setSelectedMetric(selectedMetric === metric.key ? null : metric.key);
+                  setSelectedArea(null);
+                  setCurrentPage(0);
+                }}
+                className={`p-3 rounded border transition-colors ${
+                  selectedMetric === metric.key
+                    ? 'bg-blue-900/50 border-blue-500 border-2'
+                    : 'bg-dark-bg border-dark-border hover:border-gray-500'
+                }`}
+              >
+                <div className="text-gray-400 text-xs mb-1">{metric.label}</div>
+                <div className={`text-2xl font-bold ${
+                  metric.key === 'failed' ? 'text-red-400' :
+                  metric.key === 'stale' ? 'text-yellow-400' :
+                  metric.key === 'passed' ? 'text-green-400' :
+                  'text-white'
+                }`}>
+                  {metric.value}
+                </div>
+              </button>
+            ))}
+          </div>
+
           {isExpanded && (
             <>
-              {/* Metric Boxes */}
-              <div className="grid grid-cols-4 gap-3 mb-4">
-                {[
-                  { key: 'total', label: 'Total tests', value: data.total || 0 },
-                  { key: 'failed', label: 'Failed tests', value: data.failed || 0 },
-                  { key: 'passed', label: 'Pass tests', value: passed },
-                  { key: 'stale', label: 'Stale tests', value: data.stale || 0 }
-                ].map((metric) => (
+              {/* Areas - Collapsible Section */}
+              {selectedMetric && data.areas && data.areas.length > 0 && (
+                <div className="mt-4 bg-dark-bg rounded border border-dark-border overflow-hidden">
+                  {/* Areas Header - Collapsible */}
                   <button
-                    key={metric.key}
-                    onClick={() => {
-                      setSelectedMetric(selectedMetric === metric.key ? null : metric.key);
-                      setSelectedArea(null);
-                      setCurrentPage(0);
-                    }}
-                    className={`p-3 rounded border transition-colors ${
-                      selectedMetric === metric.key
-                        ? 'bg-blue-900/50 border-blue-500 border-2'
-                        : 'bg-dark-bg border-dark-border hover:border-gray-500'
-                    }`}
+                    onClick={() => setSelectedArea(selectedArea === 'collapsed' ? null : 'collapsed')}
+                    className="w-full text-left flex items-center gap-3 hover:bg-dark-border/50 p-4 transition-colors border-b border-dark-border"
                   >
-                    <div className="text-gray-400 text-xs mb-1">{metric.label}</div>
-                    <div className={`text-2xl font-bold ${
-                      metric.key === 'failed' ? 'text-red-400' :
-                      metric.key === 'stale' ? 'text-yellow-400' :
-                      metric.key === 'passed' ? 'text-green-400' :
-                      'text-white'
-                    }`}>
-                      {metric.value}
+                    <span className="text-lg">{selectedArea !== 'collapsed' ? '▼' : '▶'}</span>
+                    <div>
+                      <div className="text-sm font-semibold text-gray-300">
+                        {selectedMetric === 'failed' && 'Areas with Failures'}
+                        {selectedMetric === 'stale' && 'Stale Test Areas'}
+                        {selectedMetric === 'passed' && 'Passing Tests by Area'}
+                        {selectedMetric === 'total' && 'Select an Area'}
+                      </div>
                     </div>
                   </button>
-                ))}
-              </div>
 
-              {/* Areas */}
-              {selectedMetric && data.areas && data.areas.length > 0 && (
-                <div className="mt-4 bg-dark-bg rounded border border-dark-border p-4 mb-4">
-                  <div className="text-sm font-semibold text-gray-300 mb-3">
-                    {selectedMetric === 'failed' && 'Areas with Failures'}
-                    {selectedMetric === 'stale' && 'Stale Test Areas'}
-                    {selectedMetric === 'passed' && 'Passing Tests by Area'}
-                    {selectedMetric === 'total' && 'Select an Area'}
-                  </div>
-                  <div className="overflow-y-auto border border-dark-border rounded p-3" style={{ maxHeight: '340px' }}>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                      {data.areas.map((area, idx) => {
-                        const shouldShow = selectedMetric === 'failed' ? area.failed > 0 :
-                                          selectedMetric === 'stale' ? area.stale > 0 : true;
+                  {/* Areas Grid - Shown when expanded */}
+                  {selectedArea !== 'collapsed' && (
+                    <div className="p-4 border-t border-dark-border">
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                        {data.areas.map((area, idx) => {
+                          const shouldShow = selectedMetric === 'failed' ? area.failed > 0 :
+                                            selectedMetric === 'stale' ? area.stale > 0 : true;
 
-                        if (!shouldShow) return null;
+                          if (!shouldShow) return null;
 
-                        return (
-                          <button
-                            key={idx}
-                            onClick={() => {
-                              setSelectedArea(selectedArea === idx ? null : idx);
-                              setCurrentPage(0);
-                            }}
-                            className={`p-3 rounded border transition-colors text-left ${
-                              selectedArea === idx
-                                ? 'bg-blue-900/50 border-blue-500 border-2'
-                                : 'bg-dark-card border-dark-border hover:border-gray-500'
-                            }`}
-                          >
-                            <div className="text-gray-400 text-xs">{area.name}</div>
-                            <div className="text-xl font-bold text-white">
-                              {selectedMetric === 'failed' ? area.failed :
-                               selectedMetric === 'stale' ? area.stale :
-                               selectedMetric === 'passed' ? (area.total - area.failed) :
-                               area.total}
-                            </div>
-                          </button>
-                        );
-                      })}
+                          return (
+                            <button
+                              key={idx}
+                              onClick={() => {
+                                setSelectedArea(selectedArea === idx ? null : idx);
+                                setCurrentPage(0);
+                              }}
+                              className={`p-3 rounded border transition-colors text-left ${
+                                selectedArea === idx
+                                  ? 'bg-blue-900/50 border-blue-500 border-2'
+                                  : 'bg-dark-card border-dark-border hover:border-gray-500'
+                              }`}
+                            >
+                              <div className="text-gray-400 text-xs">{area.name}</div>
+                              <div className="text-xl font-bold text-white">
+                                {selectedMetric === 'failed' ? area.failed :
+                                 selectedMetric === 'stale' ? area.stale :
+                                 selectedMetric === 'passed' ? (area.total - area.failed) :
+                                 area.total}
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
               )}
 
               {/* Test Details Table */}
-              {selectedMetric && selectedArea !== null && (
+              {selectedMetric && selectedArea !== null && selectedArea !== 'collapsed' && (
                 <div className="mt-4 bg-dark-card rounded border border-dark-border p-4">
                   <div className="text-sm font-semibold text-gray-300 mb-3">
                     Details ({allTests.length} tests)
