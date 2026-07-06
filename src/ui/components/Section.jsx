@@ -420,4 +420,7 @@ export default function Section({ title, data, sectionKey, onClickMetric }) {
       )}
       </>
     );
+  }
+
+  return null;
 }
