@@ -236,10 +236,10 @@ export async function fetchReadyClusterTests(config) {
       }
     }
 
-    // Use defaults only if still no changes found
+    // No fallback - only show real data from Jenkins changeSet or Perforce
     if (recentChanges.length === 0) {
-      console.warn('[ReadyCluster] No changes found anywhere, using fallback');
-      recentChanges = getDefaultChanges();
+      console.warn('[ReadyCluster] No real changes found - Jenkins has no changeSet and Perforce is unavailable');
+      console.warn('[ReadyCluster] Recent Changes section will be empty until Perforce connectivity is restored');
     }
 
     return {
@@ -264,38 +264,10 @@ export async function fetchReadyClusterTests(config) {
 }
 
 function getDefaultChanges() {
-  // Return sample changes based on actual recent Jira tickets and changes
-  // This is used when Perforce is unavailable and Jenkins has no changeSet data
-  const today = new Date();
-  const changes = [];
-
-  const recentTickets = [
-    { num: 'WSC-7657', desc: 'Portal UI test framework improvements', author: 'portal-test-team' },
-    { num: 'CES-6542', desc: 'Integration test suite updates', author: 'integration-team' },
-    { num: 'WSC-7658', desc: 'Selenium test data refresh', author: 'qa-automation' },
-    { num: 'DEV-1234', desc: 'API endpoint validation tests', author: 'api-team' },
-    { num: 'WSC-7659', desc: 'UI component regression tests', author: 'portal-team' },
-    { num: 'OPS-5678', desc: 'Load and performance testing', author: 'perf-team' },
-    { num: 'SEC-2020', desc: 'Security test coverage expansion', author: 'security-team' },
-    { num: 'WSC-7660', desc: 'End-to-end workflow testing', author: 'qa-team' }
-  ];
-
-  for (let i = 0; i < 25; i++) {
-    const date = new Date(today);
-    date.setDate(date.getDate() - Math.floor(i / 3));
-    const dateStr = date.toISOString().split('T')[0];
-    const ticket = recentTickets[i % recentTickets.length];
-
-    changes.push({
-      buildNum: String(6998 - i),
-      date: dateStr,
-      ticketNum: ticket.num,
-      details: ticket.desc,
-      author: ticket.author
-    });
-  }
-
-  return changes;
+  // Return empty array - no mock data
+  // Real changes should only come from Perforce or Jenkins changeSet
+  // Only show actual author names, not team names or mock data
+  return [];
 }
 
 function getIntegrationTestData(totalTestCount = 308187, failedTestCount = 813) {
