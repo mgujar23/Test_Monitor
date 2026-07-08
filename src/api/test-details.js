@@ -90,14 +90,15 @@ export function getTestDetails(testId, cachedData) {
   }
 
   // Build detailed response
-  const suggestedFix = getSuggestedFix(test.name || testName, cachedData.fixes);
+  const testStatus = test.status || 'UNKNOWN';
+  const suggestedFix = testStatus === 'PASS' ? 'N/A' : (getSuggestedFix(test.name || testName, cachedData.fixes) || 'N/A');
   const recentChanges = getRecentChanges(test.name || testName, cachedData);
 
   return {
     section,
     area: test.area || 'Unknown',
     name: test.name || testName,
-    status: test.status || 'UNKNOWN',
+    status: testStatus,
     className: test.className || '',
     duration: test.duration || 0,
     lastRun: test.lastRun || cachedData.timestamp,

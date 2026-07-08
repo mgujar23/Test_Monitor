@@ -1,3 +1,4 @@
+import { log, warn, error } from '../server/logger.js';
 /**
  * AI Insights Module - Analyzes test data and generates intelligent alerts
  */
@@ -72,7 +73,7 @@ export function generateAIInsights(dashboardData) {
 
     return insights;
   } catch (error) {
-    console.error('[AI] Error generating insights:', error.message);
+    error('[AI] Error generating insights:', error.message);
     return {
       healthScore: 75,
       passRate: 95,

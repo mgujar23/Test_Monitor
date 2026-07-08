@@ -1,3 +1,4 @@
+import { log, warn, error } from '../server/logger.js';
 import axios from 'axios';
 
 export async function fetchSeleniumTests(portalUrl) {
@@ -10,7 +11,7 @@ export async function fetchSeleniumTests(portalUrl) {
       }
     });
 
-    console.log('[Selenium] Fetched portal data from:', portalUrl);
+    log('[Selenium] Fetched portal data from:', portalUrl);
     const html = response.data;
 
     // Extract from three specific elements only:
@@ -26,7 +27,7 @@ export async function fetchSeleniumTests(portalUrl) {
     const failedMatch = html.match(/>Failed<[\s\S]*?<td[^>]*align="right"[^>]*>[\s]*\d+%[\s]*<\/td>[\s]*<td[^>]*align="right"[^>]*>[\s]*(\d+)/);
     const failedCount = failedMatch ? parseInt(failedMatch[1]) : 0;
 
-    console.log(`[Selenium] Extracted: Total=${totalTests}, Passed=${passedCount}, Failed=${failedCount}`);
+    log(`[Selenium] Extracted: Total=${totalTests}, Passed=${passedCount}, Failed=${failedCount}`);
 
     // Extract area data from test-dir-summary rows
     // Pattern: data-dir="dir-AREANAME" ... Total: X ... Passed: Y
@@ -113,7 +114,7 @@ export async function fetchSeleniumTests(portalUrl) {
       });
     }
 
-    console.log(`[Selenium] Parsed ${totalTests} total tests across ${areas.length} areas, ${totalFailed} failed`);
+    log(`[Selenium] Parsed ${totalTests} total tests across ${areas.length} areas, ${totalFailed} failed`);
 
     return {
       total: totalTests,
@@ -122,7 +123,7 @@ export async function fetchSeleniumTests(portalUrl) {
       areas: areas
     };
   } catch (error) {
-    console.error('Error fetching Selenium Tests:', error.message);
+    error('Error fetching Selenium Tests:', error.message);
     return { total: 0, failed: 0, stale: 0, areas: [] };
   }
 }

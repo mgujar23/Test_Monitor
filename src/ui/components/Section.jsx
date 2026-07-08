@@ -264,9 +264,40 @@ export default function Section({ title, data, sectionKey, onClickMetric }) {
               {/* Test Details Table */}
               {selectedMetric && selectedArea !== null && selectedArea !== 'collapsed' && (
                 <div className="mt-4 bg-dark-card rounded border border-dark-border p-4">
-                  <div className="text-sm font-semibold text-gray-300 mb-3">
+                  <div className="text-sm font-semibold text-gray-300 mb-2">
                     Details ({allTests.length} tests)
                   </div>
+                  {data.areas?.[selectedArea] && selectedArea !== 'collapsed' && (
+                    (() => {
+                      const area = data.areas[selectedArea];
+                      let displayCount = 0;
+                      let totalCount = 0;
+                      let label = '';
+
+                      if (selectedMetric === 'failed') {
+                        displayCount = area.failed;
+                        label = 'failures';
+                      } else if (selectedMetric === 'passed') {
+                        displayCount = area.total - area.failed;
+                        label = 'passing tests';
+                      } else if (selectedMetric === 'total') {
+                        displayCount = area.total;
+                        label = 'total tests';
+                      } else if (selectedMetric === 'stale') {
+                        displayCount = area.stale;
+                        label = 'stale tests';
+                      }
+
+                      if (displayCount > allTests.length) {
+                        return (
+                          <div className="bg-yellow-900/20 border border-yellow-700/50 rounded p-3 mb-3 text-yellow-100 text-xs">
+                            <span className="font-semibold">ℹ️ Note:</span> This area has <span className="font-bold">{displayCount} {label}</span> in total. The count represents aggregated results from the entire test suite in this area.
+                          </div>
+                        );
+                      }
+                      return null;
+                    })()
+                  )}
                   <div className="overflow-x-auto border border-dark-border rounded" style={{ maxHeight: '400px' }}>
                     <table className="w-full text-xs text-gray-300">
                       <thead className="sticky top-0 bg-dark-bg border-b border-dark-border">
@@ -295,21 +326,25 @@ export default function Section({ title, data, sectionKey, onClickMetric }) {
                               <td className="px-3 py-2 text-gray-400">{test.lastPassed || 'N/A'}</td>
                               <td className="px-3 py-2 text-gray-400 max-w-xs truncate">{test.recentChanges || 'N/A'}</td>
                               <td className="px-3 py-2">
-                                <button
-                                  onClick={() => {
-                                    const diff = generateTestFixDiff({
-                                      name: test.filename,
-                                      className: test.filename,
-                                      status: test.status
-                                    });
-                                    setCurrentDiff(diff);
-                                    setCurrentTestName(test.filename);
-                                    setShowDiffModal(true);
-                                  }}
-                                  className="px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded font-semibold transition-colors"
-                                >
-                                  View
-                                </button>
+                                {test.status === 'PASS' ? (
+                                  <span className="text-gray-500 text-xs">N/A</span>
+                                ) : (
+                                  <button
+                                    onClick={() => {
+                                      const diff = generateTestFixDiff({
+                                        name: test.filename,
+                                        className: test.filename,
+                                        status: test.status
+                                      });
+                                      setCurrentDiff(diff);
+                                      setCurrentTestName(test.filename);
+                                      setShowDiffModal(true);
+                                    }}
+                                    className="px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded font-semibold transition-colors"
+                                  >
+                                    View
+                                  </button>
+                                )}
                               </td>
                             </tr>
                           ))
@@ -403,6 +438,35 @@ export default function Section({ title, data, sectionKey, onClickMetric }) {
 
   // ========== NEW TESTS SECTION ==========
   if (sectionKey === 'newTestsAdded') {
+    const [selectedViewType, setSelectedViewType] = useState('yearly'); // 'yearly' or 'areas'
+    const [selectedYear, setSelectedYear] = useState(null);
+    const [selectedArea, setSelectedArea] = useState(null);
+
+    const totalTests = Object.values(data.yearly || {}).reduce((sum, tests) => sum + tests.length, 0);
+
+    // Ensure all years 2023-2026 are shown, even if empty
+    const allYears = [2023, 2024, 2025, 2026];
+    const yearlyMetrics = allYears.map(year => ({
+      year: String(year),
+      count: (data.yearly?.[year] || []).length
+    }));
+
+    const areaMetrics = Object.entries(data.byArea || {}).map(([area, tests]) => ({
+      area,
+      count: tests.length
+    }));
+
+    const getSelectedTests = () => {
+      if (selectedViewType === 'yearly' && selectedYear) {
+        return (data.yearly && data.yearly[selectedYear]) || [];
+      } else if (selectedViewType === 'areas' && selectedArea) {
+        return (data.byArea && data.byArea[selectedArea]) || [];
+      }
+      return [];
+    };
+
+    const selectedTests = getSelectedTests();
+
     return (
       <div className="bg-dark-card border border-dark-border rounded-lg p-4 mb-4">
         <button
@@ -411,29 +475,111 @@ export default function Section({ title, data, sectionKey, onClickMetric }) {
         >
           <span className="text-lg">{isExpanded ? '▼' : '▶'}</span>
           <h2 className="text-xl font-bold text-white flex-1">{title}</h2>
+          <span className="text-2xl font-bold text-blue-400">{totalTests}</span>
         </button>
 
-        {isExpanded && data.yearly && (
-          <div className="mt-4">
-            {Object.entries(data.yearly).map(([year, tests]) => (
-              <div key={year} className="mb-6">
-                <h3 className="text-sm font-semibold text-gray-300 mb-3">Year {year} ({tests.length} tests)</h3>
+        {isExpanded && (
+          <div className="mt-4 space-y-6">
+            {/* View Type Tabs */}
+            <div className="flex gap-2 border-b border-dark-border">
+              <button
+                onClick={() => {
+                  setSelectedViewType('yearly');
+                  setSelectedYear(null);
+                  setSelectedArea(null);
+                }}
+                className={`px-4 py-2 border-b-2 font-semibold text-sm transition-colors ${
+                  selectedViewType === 'yearly'
+                    ? 'border-blue-500 text-blue-400'
+                    : 'border-transparent text-gray-400 hover:text-gray-300'
+                }`}
+              >
+                By Year
+              </button>
+              <button
+                onClick={() => {
+                  setSelectedViewType('areas');
+                  setSelectedYear(null);
+                  setSelectedArea(null);
+                }}
+                className={`px-4 py-2 border-b-2 font-semibold text-sm transition-colors ${
+                  selectedViewType === 'areas'
+                    ? 'border-blue-500 text-blue-400'
+                    : 'border-transparent text-gray-400 hover:text-gray-300'
+                }`}
+              >
+                By Area
+              </button>
+            </div>
+
+            {/* Yearly View */}
+            {selectedViewType === 'yearly' && (
+              <div>
+                <h3 className="text-sm font-semibold text-gray-300 mb-3">Tests Added Per Year</h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                  {yearlyMetrics.map(({ year, count }) => (
+                    <button
+                      key={year}
+                      onClick={() => setSelectedYear(selectedYear === year ? null : year)}
+                      className={`p-3 rounded border transition-colors text-left ${
+                        selectedYear === year
+                          ? 'bg-blue-900/50 border-blue-500 border-2'
+                          : 'bg-dark-bg border-dark-border hover:border-gray-500'
+                      }`}
+                    >
+                      <div className="text-gray-400 text-xs">Year {year}</div>
+                      <div className="text-2xl font-bold text-green-400">{count}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Area View */}
+            {selectedViewType === 'areas' && (
+              <div>
+                <h3 className="text-sm font-semibold text-gray-300 mb-3">Tests Added Per Area</h3>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-4">
+                  {areaMetrics.map(({ area, count }) => (
+                    <button
+                      key={area}
+                      onClick={() => setSelectedArea(selectedArea === area ? null : area)}
+                      className={`p-3 rounded border transition-colors text-left ${
+                        selectedArea === area
+                          ? 'bg-blue-900/50 border-blue-500 border-2'
+                          : 'bg-dark-bg border-dark-border hover:border-gray-500'
+                      }`}
+                    >
+                      <div className="text-gray-400 text-xs truncate">{area}</div>
+                      <div className="text-2xl font-bold text-green-400">{count}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Details Table */}
+            {(selectedYear || selectedArea) && (
+              <div className="bg-dark-card rounded border border-dark-border p-4">
+                <div className="text-sm font-semibold text-gray-300 mb-3">
+                  Details ({selectedTests.length} tests)
+                </div>
                 <div className="overflow-x-auto border border-dark-border rounded" style={{ maxHeight: '400px' }}>
                   <table className="w-full text-xs text-gray-300">
                     <thead className="sticky top-0 bg-dark-bg border-b border-dark-border">
                       <tr>
-                        <th className="text-left px-3 py-2">Test Name</th>
+                        <th className="text-left px-3 py-2">File Name</th>
                         <th className="text-left px-3 py-2">Date Added</th>
                         <th className="text-left px-3 py-2">Author</th>
                         <th className="text-left px-3 py-2">Change #</th>
-                        <th className="text-left px-3 py-2">View Diff</th>
+                        <th className="text-left px-3 py-2">View</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {tests.length > 0 ? (
-                        tests.map((test, idx) => (
+                      {selectedTests.length > 0 ? (
+                        selectedTests.map((test, idx) => (
                           <tr key={idx} className="border-b border-dark-border hover:bg-dark-border/30">
-                            <td className="px-3 py-2">{test.filename}</td>
+                            <td className="px-3 py-2 truncate">{test.filename}</td>
                             <td className="px-3 py-2 text-gray-400">{test.date || 'N/A'}</td>
                             <td className="px-3 py-2 text-gray-400">{test.author || 'N/A'}</td>
                             <td className="px-3 py-2 text-gray-400">{test.changeNum || 'N/A'}</td>
@@ -460,14 +606,14 @@ export default function Section({ title, data, sectionKey, onClickMetric }) {
                         ))
                       ) : (
                         <tr>
-                          <td colSpan="5" className="px-3 py-4 text-center text-gray-500">No tests added this year</td>
+                          <td colSpan="5" className="px-3 py-4 text-center text-gray-500">No tests found</td>
                         </tr>
                       )}
                     </tbody>
                   </table>
                 </div>
               </div>
-            ))}
+            )}
           </div>
         )}
 

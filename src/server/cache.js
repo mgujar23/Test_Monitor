@@ -1,3 +1,4 @@
+import { log, warn, error } from './logger.js';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -34,7 +35,7 @@ export function createEmptyDashboardData() {
 function isCacheValid() {
   try {
     if (!fs.existsSync(CACHE_FILE)) {
-      console.log('[Cache] Cache file does not exist - will refresh');
+      log('[Cache] Cache file does not exist - will refresh');
       return false;
     }
 
@@ -42,7 +43,7 @@ function isCacheValid() {
 
     // Check if cache has valid data
     if (!data.sections || !data.cacheCreatedAt) {
-      console.log('[Cache] Cache is incomplete - will refresh');
+      log('[Cache] Cache is incomplete - will refresh');
       return false;
     }
 
@@ -51,14 +52,14 @@ function isCacheValid() {
     const MAX_CACHE_AGE = 10 * 60 * 1000; // 10 minutes
 
     if (cacheAge > MAX_CACHE_AGE) {
-      console.log(`[Cache] Cache is ${Math.round(cacheAge / 1000)}s old (max: ${MAX_CACHE_AGE / 1000}s) - will refresh`);
+      log(`[Cache] Cache is ${Math.round(cacheAge / 1000)}s old (max: ${MAX_CACHE_AGE / 1000}s) - will refresh`);
       return false;
     }
 
-    console.log(`[Cache] Cache is valid (age: ${Math.round(cacheAge / 1000)}s)`);
+    log(`[Cache] Cache is valid (age: ${Math.round(cacheAge / 1000)}s)`);
     return true;
   } catch (error) {
-    console.log('[Cache] Error validating cache:', error.message, '- will refresh');
+    log('[Cache] Error validating cache:', error.message, '- will refresh');
     return false;
   }
 }
@@ -72,22 +73,22 @@ export function initializeCache() {
     // Create cache directory if it doesn't exist
     if (!fs.existsSync(CACHE_DIR)) {
       fs.mkdirSync(CACHE_DIR, { recursive: true });
-      console.log(`[Cache] Created cache directory at ${CACHE_DIR}`);
+      log(`[Cache] Created cache directory at ${CACHE_DIR}`);
     }
 
     // Clear cache file on startup to ensure fresh data is fetched
     if (fs.existsSync(CACHE_FILE)) {
       fs.unlinkSync(CACHE_FILE);
-      console.log('[Cache] Cleared stale cache on startup');
+      log('[Cache] Cleared stale cache on startup');
     }
 
     // Create fresh empty cache
     const emptyData = createEmptyDashboardData();
     fs.writeFileSync(CACHE_FILE, JSON.stringify(emptyData, null, 2));
-    console.log('[Cache] Initialized fresh cache file');
-    console.log('[Cache] Cache initialization completed - data will be fetched from live sources');
+    log('[Cache] Initialized fresh cache file');
+    log('[Cache] Cache initialization completed - data will be fetched from live sources');
   } catch (error) {
-    console.error('[Cache] Error during initialization:', error.message);
+    error('[Cache] Error during initialization:', error.message);
     throw error;
   }
 }
@@ -100,22 +101,22 @@ export function initializeCache() {
 export function loadCache() {
   try {
     if (!fs.existsSync(CACHE_FILE)) {
-      console.warn('[Cache] Cache file not found, returning null to fetch fresh data');
+      warn('[Cache] Cache file not found, returning null to fetch fresh data');
       return null;
     }
 
     // Check if cache is valid before returning
     if (!isCacheValid()) {
-      console.log('[Cache] Cache is stale or invalid, returning null to fetch fresh data');
+      log('[Cache] Cache is stale or invalid, returning null to fetch fresh data');
       return null;
     }
 
     const data = fs.readFileSync(CACHE_FILE, 'utf-8');
     const parsed = JSON.parse(data);
-    console.log('[Cache] Valid cache loaded successfully');
+    log('[Cache] Valid cache loaded successfully');
     return parsed;
   } catch (error) {
-    console.error('[Cache] Error loading cache:', error.message);
+    error('[Cache] Error loading cache:', error.message);
     return null;
   }
 }
@@ -131,9 +132,9 @@ export function saveCache(data) {
     }
 
     fs.writeFileSync(CACHE_FILE, JSON.stringify(data, null, 2));
-    console.log('[Cache] Cache saved successfully');
+    log('[Cache] Cache saved successfully');
   } catch (error) {
-    console.error('[Cache] Error saving cache:', error.message);
+    error('[Cache] Error saving cache:', error.message);
     throw error;
   }
 }

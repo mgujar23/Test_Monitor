@@ -1,5 +1,6 @@
 import axios from 'axios';
 import https from 'https';
+import { log, warn, error } from '../server/logger.js';
 
 export async function fetchReadyClusterTests(config) {
   try {
@@ -8,7 +9,7 @@ export async function fetchReadyClusterTests(config) {
     const apiToken = config.jenkins.apiToken;
 
     const jobUrl = `${baseUrl}${jobPath}api/json`;
-    console.log('[ReadyCluster] Fetching from:', jobUrl);
+    log('[ReadyCluster] Fetching from:', jobUrl);
 
     const response = await axios.get(jobUrl, {
       auth: { username: 'mgujar', password: apiToken },
@@ -17,7 +18,7 @@ export async function fetchReadyClusterTests(config) {
 
     const jobData = response.data;
     const lastBuild = jobData.lastBuild;
-    console.log('[ReadyCluster] Got job data, lastBuild:', lastBuild?.number);
+    log('[ReadyCluster] Got job data, lastBuild:', lastBuild?.number);
 
     if (!lastBuild) {
       return {
@@ -68,7 +69,7 @@ export async function fetchReadyClusterTests(config) {
     try {
       // Get list of recent builds with changeSet data
       const buildsUrl = `${baseUrl}${jobPath}api/json?tree=builds[number,timestamp,changeSet[items[author,msg]]]&limit=100`;
-      console.log('[ReadyCluster] Fetching build history from:', buildsUrl);
+      log('[ReadyCluster] Fetching build history from:', buildsUrl);
 
       const buildsResponse = await axios.get(buildsUrl, {
         auth: { username: 'mgujar', password: apiToken },
@@ -76,9 +77,9 @@ export async function fetchReadyClusterTests(config) {
       });
 
       const builds = buildsResponse.data.builds || [];
-      console.log('[ReadyCluster] Got', builds.length, 'builds from Jenkins');
+      log('[ReadyCluster] Got', builds.length, 'builds from Jenkins');
       if (builds.length > 0) {
-        console.log('[ReadyCluster] First build:', builds[0].number, 'hasChangeSet:', !!builds[0].changeSet);
+        log('[ReadyCluster] First build:', builds[0].number, 'hasChangeSet:', !!builds[0].changeSet);
       }
 
       const oneMonthAgo = new Date();
@@ -90,12 +91,12 @@ export async function fetchReadyClusterTests(config) {
 
         // Stop if we've gone past 1 month
         if (buildDate < oneMonthAgo && recentChanges.length > 0) {
-          console.log('[ReadyCluster] Reached date limit, stopping at', recentChanges.length, 'changes');
+          log('[ReadyCluster] Reached date limit, stopping at', recentChanges.length, 'changes');
           return;
         }
 
         if (build.changeSet && build.changeSet.items && build.changeSet.items.length > 0) {
-          console.log(`[ReadyCluster] Build #${build.number} has ${build.changeSet.items.length} changes`);
+          log(`[ReadyCluster] Build #${build.number} has ${build.changeSet.items.length} changes`);
 
           build.changeSet.items.forEach(item => {
             const message = item.msg || '';
@@ -125,16 +126,16 @@ export async function fetchReadyClusterTests(config) {
         }
       });
 
-      console.log('[ReadyCluster] Found', recentChanges.length, 'changes from last month');
+      log('[ReadyCluster] Found', recentChanges.length, 'changes from last month');
     } catch (error) {
-      console.warn('[ReadyCluster] Could not fetch changes:', error.message);
-      console.warn('[ReadyCluster] Error details:', error.response?.status, error.response?.statusText);
-      console.warn('[ReadyCluster] Tried URL:', `${baseUrl}${jobPath}api/json?limit=100`);
+      warn('[ReadyCluster] Could not fetch changes:', error.message);
+      warn('[ReadyCluster] Error details:', error.response?.status, error.response?.statusText);
+      warn('[ReadyCluster] Tried URL:', `${baseUrl}${jobPath}api/json?limit=100`);
     }
 
     // Use defaults if no changes found
     if (recentChanges.length === 0) {
-      console.warn('[ReadyCluster] No changes found in recent builds, trying lastSuccessfulBuild...');
+      warn('[ReadyCluster] No changes found in recent builds, trying lastSuccessfulBuild...');
       try {
         const successfulBuildUrl = `${baseUrl}${jobPath}lastSuccessfulBuild/api/json?tree=number,timestamp,changeSet[items[author,msg]]`;
         const successfulResponse = await axios.get(successfulBuildUrl, {
@@ -144,7 +145,7 @@ export async function fetchReadyClusterTests(config) {
 
         const successfulBuild = successfulResponse.data;
         if (successfulBuild.changeSet && successfulBuild.changeSet.items && successfulBuild.changeSet.items.length > 0) {
-          console.log('[ReadyCluster] Got', successfulBuild.changeSet.items.length, 'changes from lastSuccessfulBuild');
+          log('[ReadyCluster] Got', successfulBuild.changeSet.items.length, 'changes from lastSuccessfulBuild');
           successfulBuild.changeSet.items.forEach(item => {
             const message = item.msg || '';
             const ticketMatch = message.match(/([A-Z]+-\d+)/);
@@ -165,28 +166,28 @@ export async function fetchReadyClusterTests(config) {
           });
         }
       } catch (error) {
-        console.warn('[ReadyCluster] Could not fetch from lastSuccessfulBuild:', error.message);
+        warn('[ReadyCluster] Could not fetch from lastSuccessfulBuild:', error.message);
       }
     }
 
     // Try to fetch from Perforce if Jenkins has no changeSet
     if (recentChanges.length === 0) {
-      console.warn('[ReadyCluster] Still no changes from Jenkins, trying Perforce via p4 CLI...');
+      warn('[ReadyCluster] Still no changes from Jenkins, trying Perforce via p4 CLI...');
       try {
         const { execSync } = await import('child_process');
         const p4Config = config.perforce;
         if (p4Config && p4Config.serverUrl) {
-          console.log('[ReadyCluster] Fetching changes from main repo: //code_SaaS/csg_service');
+          log('[ReadyCluster] Fetching changes from main repo: //code_SaaS/csg_service');
 
           // Use p4 CLI to fetch recent changes from main repo
-          const changesCmd = `p4 -p ${p4Config.serverUrl} -u ${p4Config.username} changes -m 100 "//code_SaaS/csg_service/..."`;
+          const changesCmd = `p4 -p ${p4Config.serverUrl} -u ${p4Config.username} changes -m 1000 "//code_SaaS/csg_service/..."`;
           const changesOutput = execSync(changesCmd, {
             encoding: 'utf-8',
-            env: { ...process.env, P4PASSWD: p4Config.apiToken || p4Config.password }
+            env: { ...process.env, P4PORT: p4Config.serverUrl, P4USER: p4Config.username }
           });
 
           const changeLines = changesOutput.trim().split('\n').filter(line => line.length > 0);
-          console.log('[ReadyCluster] Got', changeLines.length, 'changes from Perforce');
+          log('[ReadyCluster] Got', changeLines.length, 'changes from Perforce');
 
           const oneMonthAgo = new Date();
           oneMonthAgo.setDate(oneMonthAgo.getDate() - 30);
@@ -216,19 +217,19 @@ export async function fetchReadyClusterTests(config) {
             if (recentChanges.length >= 100) break;
           }
 
-          console.log('[ReadyCluster] Extracted', recentChanges.length, 'changes from last month');
+          log('[ReadyCluster] Extracted', recentChanges.length, 'changes from last month');
         } else {
-          console.warn('[ReadyCluster] Perforce config not found');
+          warn('[ReadyCluster] Perforce config not found');
         }
       } catch (error) {
-        console.error('[ReadyCluster] Perforce fetch error:', error.message);
+        error('[ReadyCluster] Perforce fetch error:', error.message);
       }
     }
 
     // No fallback - only show real data from Jenkins changeSet or Perforce
     if (recentChanges.length === 0) {
-      console.warn('[ReadyCluster] No real changes found - Jenkins has no changeSet and Perforce is unavailable');
-      console.warn('[ReadyCluster] Recent Changes section will be empty until Perforce connectivity is restored');
+      warn('[ReadyCluster] No real changes found - Jenkins has no changeSet and Perforce is unavailable');
+      warn('[ReadyCluster] Recent Changes section will be empty until Perforce connectivity is restored');
     }
 
     return {
@@ -247,7 +248,7 @@ export async function fetchReadyClusterTests(config) {
       areas: []
     };
   } catch (error) {
-    console.error('Error fetching Ready Cluster tests:', error.message);
+    error('Error fetching Ready Cluster tests:', error.message);
     return { builds: [], changes: [], total: 0, failed: 0, stale: 0, areas: [] };
   }
 }
@@ -300,6 +301,36 @@ function getIntegrationTestData(totalTestCount = 308187, failedTestCount = 813) 
   let summedTotal = 0;
   let summedFailed = 0;
 
+  // Helper function to generate realistic test files
+  function generateTestFiles(areaName, total, failed) {
+    const tests = [];
+    const prefix = `test_${areaName.toLowerCase().replace(/\s+/g, '_')}`;
+
+    // Generate approximately 1 file per 10 tests, minimum 1 file
+    const numFiles = Math.max(1, Math.ceil(total / 10));
+
+    // Distribute failures across files
+    let failuresRemaining = failed;
+    const failuresPerFile = Math.ceil(failed / numFiles);
+
+    for (let i = 1; i <= numFiles; i++) {
+      const fileHasFailed = failuresRemaining > 0;
+      const status = fileHasFailed ? 'FAIL' : 'PASS';
+
+      tests.push({
+        filename: `${prefix}_${i}.py`,
+        status: status,
+        lastPassed: fileHasFailed ? 'Build #530' : 'Build #534',
+        recentChanges: fileHasFailed ? 'Investigation ongoing' : 'Passing consistently',
+        suggestedFix: fileHasFailed ? 'Review test failure logs' : 'N/A'
+      });
+
+      failuresRemaining -= failuresPerFile;
+    }
+
+    return tests;
+  }
+
   const areas = areaDistribution.map((area, idx) => {
     let total, failed;
 
@@ -319,13 +350,7 @@ function getIntegrationTestData(totalTestCount = 308187, failedTestCount = 813) 
       total: total,
       failed: failed,
       stale: 0,
-      tests: [
-        { filename: `test_${area.name.toLowerCase().replace(/\s+/g, '_')}_1.py`, status: failed > 0 ? 'FAIL' : 'PASS', lastPassed: failed > 0 ? 'Build #530' : 'Build #534', recentChanges: failed > 0 ? 'Investigation ongoing' : 'Passing consistently', suggestedFix: failed > 0 ? 'Review test failure logs' : 'N/A' },
-        { filename: `test_${area.name.toLowerCase().replace(/\s+/g, '_')}_2.py`, status: 'PASS', lastPassed: 'Build #534', recentChanges: 'Core functionality', suggestedFix: 'N/A' },
-        { filename: `test_${area.name.toLowerCase().replace(/\s+/g, '_')}_3.py`, status: 'PASS', lastPassed: 'Build #534', recentChanges: 'Enhanced coverage', suggestedFix: 'N/A' },
-        { filename: `test_${area.name.toLowerCase().replace(/\s+/g, '_')}_4.py`, status: 'PASS', lastPassed: 'Build #534', recentChanges: 'Edge case handling', suggestedFix: 'N/A' },
-        { filename: `test_${area.name.toLowerCase().replace(/\s+/g, '_')}_5.py`, status: 'PASS', lastPassed: 'Build #534', recentChanges: 'Integration verified', suggestedFix: 'N/A' }
-      ]
+      tests: generateTestFiles(area.name, total, failed)
     };
   });
 
@@ -338,7 +363,7 @@ function getIntegrationTestData(totalTestCount = 308187, failedTestCount = 813) 
 }
 
 export async function fetchIntegrationTests(config) {
-  console.log('[Integration] Starting fetch from sub-jobs');
+  log('[Integration] Starting fetch from sub-jobs');
 
   try {
     const baseUrl = config.jenkins.baseUrl;
@@ -358,7 +383,7 @@ export async function fetchIntegrationTests(config) {
       try {
         // Fetch HTML page to scrape test results from trend chart
         const htmlUrl = `${baseUrl}${basePath}job/${subJob.name}/`;
-        console.log(`[Integration] Fetching HTML for ${subJob.name}`);
+        log(`[Integration] Fetching HTML for ${subJob.name}`);
 
         const htmlResponse = await axios.get(htmlUrl, {
           auth: { username: 'mgujar', password: apiToken },
@@ -366,7 +391,7 @@ export async function fetchIntegrationTests(config) {
         });
 
         const html = htmlResponse.data;
-        console.log(`[Integration] ${subJob.name} HTML fetched, length: ${html.length}`);
+        log(`[Integration] ${subJob.name} HTML fetched, length: ${html.length}`);
 
         // Use lastIndexOf to get the last occurrence (actual test results, not config)
         const passedIndex = html.lastIndexOf('Passed');
@@ -404,16 +429,16 @@ export async function fetchIntegrationTests(config) {
           }
         }
 
-        console.log(`[Integration] ${subJob.name} - Passed count:`, passedCount);
-        console.log(`[Integration] ${subJob.name} - Failed count:`, failedCount);
-        console.log(`[Integration] ${subJob.name} - Skipped count:`, skippedCount);
+        log(`[Integration] ${subJob.name} - Passed count:`, passedCount);
+        log(`[Integration] ${subJob.name} - Failed count:`, failedCount);
+        log(`[Integration] ${subJob.name} - Skipped count:`, skippedCount);
 
         // Use scraped data if we found at least failed count
         if (failedCount > 0 || passedCount > 0) {
           const totalCount = passedCount || (subJob.totalTests - failedCount);
           const actualPassed = passedCount || (totalCount - failedCount - skippedCount);
 
-          console.log(`[Integration] ${subJob.name} SCRAPED: Total=${totalCount}, Passed=${actualPassed}, Failed=${failedCount}, Skipped=${skippedCount}`);
+          log(`[Integration] ${subJob.name} SCRAPED: Total=${totalCount}, Passed=${actualPassed}, Failed=${failedCount}, Skipped=${skippedCount}`);
 
           totalTests += totalCount;
           totalFailed += failedCount;
@@ -422,18 +447,18 @@ export async function fetchIntegrationTests(config) {
             hasFailure = true;
           }
         } else {
-          console.log(`[Integration] Could not extract test counts for ${subJob.name}, using defaults`);
+          log(`[Integration] Could not extract test counts for ${subJob.name}, using defaults`);
           totalTests += subJob.totalTests;
         }
 
       } catch (error) {
-        console.error(`[Integration] Error fetching ${subJob.name}:`, error.message);
+        error(`[Integration] Error fetching ${subJob.name}:`, error.message);
         totalTests += subJob.totalTests;
       }
     }
 
-    console.log(`[Integration] Combined totals - Tests: ${totalTests}, Failed: ${totalFailed}`);
-    console.log(`[Integration] Final return - Total: ${totalTests}, Failed: ${totalFailed}`);
+    log(`[Integration] Combined totals - Tests: ${totalTests}, Failed: ${totalFailed}`);
+    log(`[Integration] Final return - Total: ${totalTests}, Failed: ${totalFailed}`);
 
     // Return aggregated data with real test counts
     return {
@@ -444,7 +469,7 @@ export async function fetchIntegrationTests(config) {
     };
 
   } catch (error) {
-    console.error('[Integration] Fatal error:', error.message);
+    error('[Integration] Fatal error:', error.message);
     return getIntegrationTestData(0, 0);
   }
 }
@@ -478,6 +503,36 @@ function getSmokeTestData(totalTestCount = 85, failedTestCount = 4) {
   let summedTotal = 0;
   let summedFailed = 0;
 
+  // Helper function to generate realistic test files
+  function generateTestFiles(areaName, total, failed) {
+    const tests = [];
+    const prefix = `test_${areaName.toLowerCase().replace(/\s+/g, '_')}`;
+
+    // Generate approximately 1 file per 10 tests, minimum 1 file
+    const numFiles = Math.max(1, Math.ceil(total / 10));
+
+    // Distribute failures across files
+    let failuresRemaining = failed;
+    const failuresPerFile = Math.ceil(failed / numFiles);
+
+    for (let i = 1; i <= numFiles; i++) {
+      const fileHasFailed = failuresRemaining > 0;
+      const status = fileHasFailed ? 'FAIL' : 'PASS';
+
+      tests.push({
+        filename: `${prefix}_${i}.py`,
+        status: status,
+        lastPassed: fileHasFailed ? 'Build #6973' : 'Build #6975',
+        recentChanges: fileHasFailed ? 'Investigating failure' : 'Smoke test passing',
+        suggestedFix: fileHasFailed ? 'Check service health' : 'N/A'
+      });
+
+      failuresRemaining -= failuresPerFile;
+    }
+
+    return tests;
+  }
+
   const areas = areaDistribution.map((area, idx) => {
     let total, failed;
 
@@ -497,13 +552,7 @@ function getSmokeTestData(totalTestCount = 85, failedTestCount = 4) {
       total: total,
       failed: failed,
       stale: 0,
-      tests: [
-        { filename: `test_${area.name.toLowerCase().replace(/\s+/g, '_')}_1.py`, status: failed > 0 ? 'FAIL' : 'PASS', lastPassed: failed > 0 ? 'Build #6973' : 'Build #6975', recentChanges: failed > 0 ? 'Investigating failure' : 'Smoke test passing', suggestedFix: failed > 0 ? 'Check service health' : 'N/A' },
-        { filename: `test_${area.name.toLowerCase().replace(/\s+/g, '_')}_2.py`, status: 'PASS', lastPassed: 'Build #6975', recentChanges: 'Smoke check', suggestedFix: 'N/A' },
-        { filename: `test_${area.name.toLowerCase().replace(/\s+/g, '_')}_3.py`, status: 'PASS', lastPassed: 'Build #6975', recentChanges: 'System verification', suggestedFix: 'N/A' },
-        { filename: `test_${area.name.toLowerCase().replace(/\s+/g, '_')}_4.py`, status: 'PASS', lastPassed: 'Build #6975', recentChanges: 'Connectivity test', suggestedFix: 'N/A' },
-        { filename: `test_${area.name.toLowerCase().replace(/\s+/g, '_')}_5.py`, status: 'PASS', lastPassed: 'Build #6975', recentChanges: 'Verified online', suggestedFix: 'N/A' }
-      ]
+      tests: generateTestFiles(area.name, total, failed)
     };
   });
 
@@ -516,7 +565,7 @@ function getSmokeTestData(totalTestCount = 85, failedTestCount = 4) {
 }
 
 export async function fetchSmokeTests(config) {
-  console.log('[Smoke] Starting fetch from Jenkins');
+  log('[Smoke] Starting fetch from Jenkins');
 
   try {
     const baseUrl = config.jenkins.baseUrl;
@@ -525,7 +574,7 @@ export async function fetchSmokeTests(config) {
 
     // Try to fetch test report from last successful build
     const testReportUrl = `${baseUrl}${jobPath}lastSuccessfulBuild/testReport/api/json`;
-    console.log('[Smoke] Fetching test report from:', testReportUrl);
+    log('[Smoke] Fetching test report from:', testReportUrl);
 
     const testReportResponse = await axios.get(testReportUrl, {
       auth: { username: 'mgujar', password: apiToken },
@@ -537,20 +586,20 @@ export async function fetchSmokeTests(config) {
     const failedCount = testReport.failCount || 0;
     const totalTestCount = passedCount + failedCount;
 
-    console.log('[Smoke] Passed count:', passedCount);
-    console.log('[Smoke] Failed count:', failedCount);
-    console.log('[Smoke] Total tests:', totalTestCount);
+    log('[Smoke] Passed count:', passedCount);
+    log('[Smoke] Failed count:', failedCount);
+    log('[Smoke] Total tests:', totalTestCount);
 
     if (totalTestCount > 0) {
-      console.log('[Smoke] FETCHED: Total=' + totalTestCount + ', Passed=' + passedCount + ', Failed=' + failedCount);
+      log('[Smoke] FETCHED: Total=' + totalTestCount + ', Passed=' + passedCount + ', Failed=' + failedCount);
       return getSmokeTestData(totalTestCount, failedCount);
     } else {
-      console.log('[Smoke] No test data found, using defaults');
+      log('[Smoke] No test data found, using defaults');
       return getSmokeTestData();
     }
 
   } catch (error) {
-    console.error('[Smoke] Error fetching Smoke Tests:', error.message);
+    error('[Smoke] Error fetching Smoke Tests:', error.message);
     // Fallback: try to fetch from last completed build
     try {
       const baseUrl = config.jenkins.baseUrl;
@@ -558,7 +607,7 @@ export async function fetchSmokeTests(config) {
       const apiToken = config.jenkins.apiToken;
 
       const fallbackUrl = `${baseUrl}${jobPath}lastCompletedBuild/testReport/api/json`;
-      console.log('[Smoke] Trying fallback URL:', fallbackUrl);
+      log('[Smoke] Trying fallback URL:', fallbackUrl);
 
       const fallbackResponse = await axios.get(fallbackUrl, {
         auth: { username: 'mgujar', password: apiToken },
@@ -570,10 +619,10 @@ export async function fetchSmokeTests(config) {
       const failedCount = testReport.failCount || 0;
       const totalTestCount = passedCount + failedCount;
 
-      console.log('[Smoke] Fallback FETCHED: Total=' + totalTestCount + ', Failed=' + failedCount);
+      log('[Smoke] Fallback FETCHED: Total=' + totalTestCount + ', Failed=' + failedCount);
       return getSmokeTestData(totalTestCount, failedCount);
     } catch (fallbackError) {
-      console.error('[Smoke] Fallback also failed:', fallbackError.message);
+      error('[Smoke] Fallback also failed:', fallbackError.message);
       return getSmokeTestData();
     }
   }

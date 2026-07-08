@@ -69,14 +69,20 @@ export default function DetailsModal({ testDetails, onClose }) {
           <div>
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-sm font-semibold text-gray-400">Suggested Fix</h3>
-              <button
-                onClick={() => setShowDiff(true)}
-                className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded font-semibold transition-colors"
-              >
-                View Diff
-              </button>
+              {testDetails.suggestedFix && testDetails.suggestedFix !== 'N/A' && (
+                <button
+                  onClick={() => setShowDiff(true)}
+                  className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded font-semibold transition-colors"
+                >
+                  View Diff
+                </button>
+              )}
             </div>
-            {testDetails.suggestedFix ? (
+            {testDetails.suggestedFix === 'N/A' ? (
+              <div className="bg-blue-900/20 border border-blue-700/50 rounded p-4 text-blue-100">
+                No fix needed - test is passing
+              </div>
+            ) : testDetails.suggestedFix ? (
               <div className="bg-green-900/20 border border-green-700/50 rounded p-4 text-green-100">
                 {testDetails.suggestedFix.suggested_fix || testDetails.suggestedFix}
               </div>

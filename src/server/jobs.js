@@ -1,3 +1,4 @@
+import { log, warn, error } from './logger.js';
 import cron from 'node-cron';
 import { saveCache } from './cache.js';
 
@@ -21,7 +22,7 @@ const jobState = {
  */
 export async function performRefresh(config) {
   if (jobState.isRefreshing) {
-    console.log('[Jobs] Refresh already in progress, skipping');
+    log('[Jobs] Refresh already in progress, skipping');
     return;
   }
 
@@ -29,7 +30,7 @@ export async function performRefresh(config) {
   const startTime = Date.now();
 
   try {
-    console.log('[Jobs] Starting dashboard data refresh...');
+    log('[Jobs] Starting dashboard data refresh...');
 
     // Import aggregation function
     const { aggregateDashboardData } = await import('../api/dashboard.js');
@@ -55,9 +56,9 @@ export async function performRefresh(config) {
     jobState.nextRefresh = new Date(Date.now() + (jobState.refreshIntervalMinutes * 60 * 1000));
 
     const duration = Date.now() - startTime;
-    console.log(`[Jobs] Dashboard refresh completed in ${duration}ms`);
+    log(`[Jobs] Dashboard refresh completed in ${duration}ms`);
   } catch (error) {
-    console.error('[Jobs] Error during refresh:', error);
+    error('[Jobs] Error during refresh:', error);
     jobState.lastError = {
       message: error.message,
       timestamp: new Date().toISOString()
@@ -79,25 +80,25 @@ export function initBackgroundJob(config) {
     // For 15 minutes: */15 * * * * (every 15 minutes)
     const cronExpression = `*/${intervalMinutes} * * * *`;
 
-    console.log(`[Jobs] Initializing background refresh job (interval: ${intervalMinutes} minutes)`);
-    console.log(`[Jobs] Cron expression: ${cronExpression}`);
+    log(`[Jobs] Initializing background refresh job (interval: ${intervalMinutes} minutes)`);
+    log(`[Jobs] Cron expression: ${cronExpression}`);
 
     // Schedule the cron job
     jobState.cronTask = cron.schedule(cronExpression, async () => {
-      console.log(`[Jobs] Cron job triggered at ${new Date().toISOString()}`);
+      log(`[Jobs] Cron job triggered at ${new Date().toISOString()}`);
       await performRefresh(config);
     });
 
     // Perform initial refresh immediately
-    console.log('[Jobs] Performing initial refresh...');
+    log('[Jobs] Performing initial refresh...');
     performRefresh(config);
 
     // Set next refresh time
     jobState.nextRefresh = new Date(Date.now() + (intervalMinutes * 60 * 1000));
 
-    console.log('[Jobs] Background job initialized successfully');
+    log('[Jobs] Background job initialized successfully');
   } catch (error) {
-    console.error('[Jobs] Fatal error initializing background job:', error);
+    error('[Jobs] Fatal error initializing background job:', error);
     throw error;
   }
 }
@@ -123,6 +124,6 @@ export function getHealthStatus() {
 export function stopBackgroundJob() {
   if (jobState.cronTask) {
     jobState.cronTask.stop();
-    console.log('[Jobs] Background job stopped');
+    log('[Jobs] Background job stopped');
   }
 }
