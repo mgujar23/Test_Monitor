@@ -33,18 +33,29 @@ export async function fetchSeleniumTests(portalUrl) {
 
     log(`[Selenium] Extracted: Total=${totalTests}, Passed=${passedCount}, Failed=${failedCount}`);
 
-    // Extract area data from test-dir-summary rows
-    // More robust parsing to handle varying HTML attributes
-    const areas = [];
+    // Extract area data from test content rows grouped by data-dir
+    // This gives us the actual count of tests available in each area
+    const areasByName = {};
     let totalFailed = 0;
-    let sumOfAreaTotals = 0;
 
-    // First, find all summary rows (class contains test-dir-summary)
-    const summaryRowPattern = /<tr[^>]*test-dir-summary[^>]*data-dir="dir-([^"]+)"[^>]*>([\s\S]*?)<\/tr>/g;
+    // Count all test content rows by area to get "Total available tests" per area
+    const contentRowPattern = /<tr[^>]*data-dir="([^"]+)"[^>]*class="[^"]*test-dir-content[^"]*"[^>]*>/g;
+    let contentMatch;
+
+    while ((contentMatch = contentRowPattern.exec(html)) !== null) {
+      const areaKey = contentMatch[1];
+      if (!areasByName[areaKey]) {
+        areasByName[areaKey] = { total: 0, passed: 0, failed: 0 };
+      }
+      areasByName[areaKey].total++;
+    }
+
+    // Now extract summary data (passed/failed counts) from summary rows
+    const summaryRowPattern = /<tr[^>]*test-dir-summary[^>]*data-dir="([^"]+)"[^>]*>([\s\S]*?)<\/tr>/g;
     let rowMatch;
 
     while ((rowMatch = summaryRowPattern.exec(html)) !== null) {
-      const rawAreaName = rowMatch[1];
+      const areaKey = rowMatch[1];
       const rowContent = rowMatch[2];
 
       // Extract passed count from span with test-passed class
@@ -55,73 +66,88 @@ export async function fetchSeleniumTests(portalUrl) {
       const failedMatch = rowContent.match(/<span[^>]*test-failed[^>]*>(\d+)<\/span>/);
       const failed = failedMatch ? parseInt(failedMatch[1]) : 0;
 
-      const total = passed + failed;
+      if (!areasByName[areaKey]) {
+        areasByName[areaKey] = { total: 0, passed: 0, failed: 0 };
+      }
 
+      areasByName[areaKey].passed = passed;
+      areasByName[areaKey].failed = failed;
+      totalFailed += failed;
+    }
+
+    // Build areas array with proper formatting
+    const areas = [];
+    let sumOfAreaTotals = 0;
+
+    Object.entries(areasByName).forEach(([areaKey, counts]) => {
+      const areaName = areaKey
+        .replace(/^dir-/, '')
+        .replace(/_/g, ' ')
+        .replace(/([a-z])([A-Z])/g, '$1 $2')
+        .trim();
+
+      const total = counts.total;
       if (total > 0) {
-        const areaName = rawAreaName
-          .replace(/_/g, ' ')
-          .replace(/([a-z])([A-Z])/g, '$1 $2')
-          .trim();
-
-        totalFailed += failed;
         sumOfAreaTotals += total;
+        const passed = counts.passed || 0;
+        const failed = counts.failed || 0;
 
         // Create test objects matching actual pass/fail counts
         const tests = [];
 
-      // Add individual PASSED test entries (max 10)
-      for (let i = 1; i <= Math.min(passed, 10); i++) {
-        tests.push({
-          filename: `test_${areaName.toLowerCase().replace(/ /g, '_')}_pass_${i}.py`,
-          status: 'PASS',
-          lastPassed: 'Latest Build',
-          recentChanges: 'Test passing',
-          suggestedFix: 'N/A'
-        });
-      }
+        // Add individual PASSED test entries (max 10)
+        for (let i = 1; i <= Math.min(passed, 10); i++) {
+          tests.push({
+            filename: `test_${areaName.toLowerCase().replace(/ /g, '_')}_pass_${i}.py`,
+            status: 'PASS',
+            lastPassed: 'Latest Build',
+            recentChanges: 'Test passing',
+            suggestedFix: 'N/A'
+          });
+        }
 
-      // Add individual FAILED test entries (max 10)
-      for (let i = 1; i <= Math.min(failed, 10); i++) {
-        tests.push({
-          filename: `test_${areaName.toLowerCase().replace(/ /g, '_')}_fail_${i}.py`,
-          status: 'FAIL',
-          lastPassed: 'Build #N/A',
-          recentChanges: 'Test failure detected',
-          suggestedFix: 'Review failure logs'
-        });
-      }
+        // Add individual FAILED test entries (max 10)
+        for (let i = 1; i <= Math.min(failed, 10); i++) {
+          tests.push({
+            filename: `test_${areaName.toLowerCase().replace(/ /g, '_')}_fail_${i}.py`,
+            status: 'FAIL',
+            lastPassed: 'Build #N/A',
+            recentChanges: 'Test failure detected',
+            suggestedFix: 'Review failure logs'
+          });
+        }
 
-      // Add summary entries if counts exceed 10
-      if (passed > 10) {
-        tests.push({
-          filename: `... and ${passed - 10} more passing tests`,
-          status: 'PASS',
-          lastPassed: 'Latest Build',
-          recentChanges: 'Additional passing tests',
-          suggestedFix: 'N/A'
-        });
-      }
+        // Add summary entries if counts exceed 10
+        if (passed > 10) {
+          tests.push({
+            filename: `... and ${passed - 10} more passing tests`,
+            status: 'PASS',
+            lastPassed: 'Latest Build',
+            recentChanges: 'Additional passing tests',
+            suggestedFix: 'N/A'
+          });
+        }
 
-      if (failed > 10) {
-        tests.push({
-          filename: `... and ${failed - 10} more failing tests`,
-          status: 'FAIL',
-          lastPassed: 'Build #N/A',
-          recentChanges: 'Additional test failures',
-          suggestedFix: 'Review failure logs'
-        });
-      }
+        if (failed > 10) {
+          tests.push({
+            filename: `... and ${failed - 10} more failing tests`,
+            status: 'FAIL',
+            lastPassed: 'Build #N/A',
+            recentChanges: 'Additional test failures',
+            suggestedFix: 'Review failure logs'
+          });
+        }
 
-      // If no test data, show area summary
-      if (tests.length === 0) {
-        tests.push({
-          filename: `${total} total tests in area`,
-          status: 'PASS',
-          lastPassed: 'Latest Build',
-          recentChanges: 'All tests passing',
-          suggestedFix: 'N/A'
-        });
-      }
+        // If no test data, show area summary
+        if (tests.length === 0) {
+          tests.push({
+            filename: `${total} total tests in area`,
+            status: 'PASS',
+            lastPassed: 'Latest Build',
+            recentChanges: 'All tests passing',
+            suggestedFix: 'N/A'
+          });
+        }
 
         areas.push({
           name: areaName,
@@ -131,18 +157,47 @@ export async function fetchSeleniumTests(portalUrl) {
           tests: tests
         });
       }
-    }
+    });
 
-    // Account for tests not in any area (difference between total available and sum of areas)
-    const unassignedTests = Math.max(0, totalAvailableTests - sumOfAreaTotals);
-    if (unassignedTests > 0) {
-      areas.push({
+    // Create separate area arrays for each metric
+    // For "Unique tests run": show areas with passed/failed counts
+    const uniqueTestsAreas = areas.map(area => ({
+      name: area.name,
+      total: area.passed + area.failed,
+      failed: area.failed,
+      stale: 0,
+      tests: area.tests
+    })).filter(a => a.total > 0);
+
+    // For "Total available tests": show areas with total count (all tests available)
+    const totalAvailableAreas = areas.map(area => ({
+      name: area.name,
+      total: area.total,
+      failed: 0,
+      stale: 0,
+      tests: [{
+        filename: `${area.total} total tests available in area`,
+        status: 'PASS',
+        lastPassed: 'N/A',
+        recentChanges: 'Available tests',
+        suggestedFix: 'N/A'
+      }]
+    })).filter(a => a.total > 0);
+
+    // Calculate sums for each metric
+    const sumUniqueTestsRunByArea = uniqueTestsAreas.reduce((sum, a) => sum + a.total, 0);
+    const sumTotalAvailableByArea = totalAvailableAreas.reduce((sum, a) => sum + a.total, 0);
+
+    // Add "Unassigned / Other" if needed
+    const unassignedUnique = Math.max(0, totalTests - sumUniqueTestsRunByArea);
+    if (unassignedUnique > 0) {
+      uniqueTestsAreas.push({
         name: 'Unassigned / Other',
-        total: unassignedTests,
+        total: unassignedUnique,
         failed: 0,
         stale: 0,
         tests: [{
-          filename: `${unassignedTests} tests not assigned to any area`,
+          filename: `${unassignedUnique} tests not assigned to any area`,
           status: 'PASS',
           lastPassed: 'Latest Build',
           recentChanges: 'Unassigned tests',
@@ -151,14 +206,32 @@ export async function fetchSeleniumTests(portalUrl) {
       });
     }
 
-    log(`[Selenium] Parsed ${totalTests} unique tests run, ${totalAvailableTests} total available (${areas.length} areas), ${totalFailed} failed`);
+    const unassignedTotal = Math.max(0, totalAvailableTests - sumTotalAvailableByArea);
+    if (unassignedTotal > 0) {
+      totalAvailableAreas.push({
+        name: 'Unassigned / Other',
+        total: unassignedTotal,
+        failed: 0,
+        stale: 0,
+        tests: [{
+          filename: `${unassignedTotal} tests not assigned to any area`,
+          status: 'PASS',
+          lastPassed: 'Latest Build',
+          recentChanges: 'Unassigned tests',
+          suggestedFix: 'N/A'
+        }]
+      });
+    }
+
+    log(`[Selenium] Parsed ${totalTests} unique tests run, ${totalAvailableTests} total available (${uniqueTestsAreas.length} areas), ${totalFailed} failed`);
 
     return {
       total: totalTests, // Unique tests run
       totalAvailable: totalAvailableTests, // Total available tests from portal
       failed: totalFailed,
       stale: 0,
-      areas: areas
+      areas: uniqueTestsAreas, // Areas for "Unique tests run"
+      areasAvailable: totalAvailableAreas // Areas for "Total available tests"
     };
   } catch (error) {
     error('Error fetching Selenium Tests:', error.message);

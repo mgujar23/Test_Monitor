@@ -126,10 +126,19 @@ export default function Section({ title, data, sectionKey, onClickMetric }) {
     const passed = (data.total || 0) - (data.failed || 0);
     const passingPercentage = data.total > 0 ? ((passed / data.total) * 100).toFixed(2) : '0.00';
 
+    // Get the appropriate areas array based on selected metric
+    const getAreasArray = () => {
+      if (selectedMetric === 'totalAvailable') {
+        return data.areasAvailable || [];
+      }
+      return data.areas || [];
+    };
+
     // Get filtered tests based on selected metric and area
     const getFilteredTests = () => {
       if (!selectedArea) return [];
-      const area = data.areas?.[selectedArea];
+      const areasArray = getAreasArray();
+      const area = areasArray?.[selectedArea];
       if (!area) return [];
 
       if (selectedMetric === 'failed') {
@@ -210,65 +219,68 @@ export default function Section({ title, data, sectionKey, onClickMetric }) {
           {isExpanded && (
             <>
               {/* Areas - Collapsible Section */}
-              {selectedMetric && data.areas && data.areas.length > 0 && (
-                <div className="mt-4 bg-dark-bg rounded border border-dark-border overflow-hidden">
-                  {/* Areas Header - Collapsible */}
-                  <button
-                    onClick={() => setSelectedArea(selectedArea === 'collapsed' ? null : 'collapsed')}
-                    className="w-full text-left flex items-center gap-3 hover:bg-dark-border/50 p-4 transition-colors border-b border-dark-border"
-                  >
-                    <span className="text-lg">{selectedArea !== 'collapsed' ? '▼' : '▶'}</span>
-                    <div>
-                      <div className="text-sm font-semibold text-gray-300">
-                        {selectedMetric === 'failed' && 'Areas with Failures'}
-                        {selectedMetric === 'stale' && 'Stale Test Areas'}
-                        {selectedMetric === 'passed' && 'Passing Tests by Area'}
-                        {selectedMetric === 'total' && 'Unique Tests Run by Area'}
-                        {selectedMetric === 'totalAvailable' && 'Total Available Tests by Area'}
+              {(() => {
+                const areasArray = getAreasArray();
+                return selectedMetric && areasArray && areasArray.length > 0 && (
+                  <div className="mt-4 bg-dark-bg rounded border border-dark-border overflow-hidden">
+                    {/* Areas Header - Collapsible */}
+                    <button
+                      onClick={() => setSelectedArea(selectedArea === 'collapsed' ? null : 'collapsed')}
+                      className="w-full text-left flex items-center gap-3 hover:bg-dark-border/50 p-4 transition-colors border-b border-dark-border"
+                    >
+                      <span className="text-lg">{selectedArea !== 'collapsed' ? '▼' : '▶'}</span>
+                      <div>
+                        <div className="text-sm font-semibold text-gray-300">
+                          {selectedMetric === 'failed' && 'Areas with Failures'}
+                          {selectedMetric === 'stale' && 'Stale Test Areas'}
+                          {selectedMetric === 'passed' && 'Passing Tests by Area'}
+                          {selectedMetric === 'total' && 'Unique Tests Run by Area'}
+                          {selectedMetric === 'totalAvailable' && 'Total Available Tests by Area'}
+                        </div>
                       </div>
-                    </div>
-                  </button>
+                    </button>
 
-                  {/* Areas Grid - Shown when expanded */}
-                  {selectedArea !== 'collapsed' && (
-                    <div className="p-4 border-t border-dark-border">
-                      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                        {data.areas.map((area, idx) => {
-                          const shouldShow = selectedMetric === 'failed' ? area.failed > 0 :
-                                            selectedMetric === 'stale' ? area.stale > 0 : true;
+                    {/* Areas Grid - Shown when expanded */}
+                    {selectedArea !== 'collapsed' && (
+                      <div className="p-4 border-t border-dark-border">
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                          {areasArray.map((area, idx) => {
+                            const shouldShow = selectedMetric === 'failed' ? area.failed > 0 :
+                                              selectedMetric === 'stale' ? area.stale > 0 : true;
 
-                          if (!shouldShow) return null;
+                            if (!shouldShow) return null;
 
-                          return (
-                            <button
-                              key={idx}
-                              onClick={() => {
-                                setSelectedArea(selectedArea === idx ? null : idx);
-                                setCurrentPage(0);
-                              }}
-                              className={`p-3 rounded border transition-colors text-left ${
-                                selectedArea === idx
-                                  ? 'bg-blue-900/50 border-blue-500 border-2'
-                                  : 'bg-dark-card border-dark-border hover:border-gray-500'
-                              }`}
-                            >
-                              <div className="text-gray-400 text-xs">{area.name}</div>
-                              <div className="text-xl font-bold text-white">
-                                {selectedMetric === 'failed' ? area.failed :
-                                 selectedMetric === 'stale' ? area.stale :
-                                 selectedMetric === 'passed' ? (area.total - area.failed) :
-                                 selectedMetric === 'total' ? area.total :
-                                 selectedMetric === 'totalAvailable' ? area.total :
-                                 area.total}
-                              </div>
-                            </button>
-                          );
-                        })}
+                            return (
+                              <button
+                                key={idx}
+                                onClick={() => {
+                                  setSelectedArea(selectedArea === idx ? null : idx);
+                                  setCurrentPage(0);
+                                }}
+                                className={`p-3 rounded border transition-colors text-left ${
+                                  selectedArea === idx
+                                    ? 'bg-blue-900/50 border-blue-500 border-2'
+                                    : 'bg-dark-card border-dark-border hover:border-gray-500'
+                                }`}
+                              >
+                                <div className="text-gray-400 text-xs">{area.name}</div>
+                                <div className="text-xl font-bold text-white">
+                                  {selectedMetric === 'failed' ? area.failed :
+                                   selectedMetric === 'stale' ? area.stale :
+                                   selectedMetric === 'passed' ? (area.total - area.failed) :
+                                   selectedMetric === 'total' ? area.total :
+                                   selectedMetric === 'totalAvailable' ? area.total :
+                                   area.total}
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
                       </div>
-                    </div>
-                  )}
-                </div>
-              )}
+                    )}
+                  </div>
+                );
+              })()}
 
               {/* Test Details Table */}
               {selectedMetric && selectedArea !== null && selectedArea !== 'collapsed' && (
@@ -276,37 +288,41 @@ export default function Section({ title, data, sectionKey, onClickMetric }) {
                   <div className="text-sm font-semibold text-gray-300 mb-2">
                     Details ({allTests.length} tests)
                   </div>
-                  {data.areas?.[selectedArea] && selectedArea !== 'collapsed' && (
-                    (() => {
-                      const area = data.areas[selectedArea];
-                      let displayCount = 0;
-                      let totalCount = 0;
-                      let label = '';
+                  {(() => {
+                    const areasArray = getAreasArray();
+                    if (!areasArray?.[selectedArea] || selectedArea === 'collapsed') return null;
 
-                      if (selectedMetric === 'failed') {
-                        displayCount = area.failed;
-                        label = 'failures';
-                      } else if (selectedMetric === 'passed') {
-                        displayCount = area.total - area.failed;
-                        label = 'passing tests';
-                      } else if (selectedMetric === 'total') {
-                        displayCount = area.total;
-                        label = 'total tests';
-                      } else if (selectedMetric === 'stale') {
-                        displayCount = area.stale;
-                        label = 'stale tests';
-                      }
+                    const area = areasArray[selectedArea];
+                    let displayCount = 0;
+                    let totalCount = 0;
+                    let label = '';
 
-                      if (displayCount > allTests.length) {
-                        return (
-                          <div className="bg-yellow-900/20 border border-yellow-700/50 rounded p-3 mb-3 text-yellow-100 text-xs">
-                            <span className="font-semibold">ℹ️ Note:</span> This area has <span className="font-bold">{displayCount} {label}</span> in total. The count represents aggregated results from the entire test suite in this area.
-                          </div>
-                        );
-                      }
-                      return null;
-                    })()
-                  )}
+                    if (selectedMetric === 'failed') {
+                      displayCount = area.failed;
+                      label = 'failures';
+                    } else if (selectedMetric === 'passed') {
+                      displayCount = area.total - area.failed;
+                      label = 'passing tests';
+                    } else if (selectedMetric === 'total') {
+                      displayCount = area.total;
+                      label = 'total tests';
+                    } else if (selectedMetric === 'stale') {
+                      displayCount = area.stale;
+                      label = 'stale tests';
+                    } else if (selectedMetric === 'totalAvailable') {
+                      displayCount = area.total;
+                      label = 'total available tests';
+                    }
+
+                    if (displayCount > allTests.length) {
+                      return (
+                        <div className="bg-yellow-900/20 border border-yellow-700/50 rounded p-3 mb-3 text-yellow-100 text-xs">
+                          <span className="font-semibold">ℹ️ Note:</span> This area has <span className="font-bold">{displayCount} {label}</span> in total. The count represents aggregated results from the entire test suite in this area.
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()}
                   <div className="overflow-x-auto border border-dark-border rounded" style={{ maxHeight: '400px' }}>
                     <table className="w-full text-xs text-gray-300">
                       <thead className="sticky top-0 bg-dark-bg border-b border-dark-border">
