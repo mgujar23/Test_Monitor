@@ -209,8 +209,8 @@ export default function Section({ title, data, sectionKey, onClickMetric }) {
 
           {isExpanded && (
             <>
-              {/* Areas - Collapsible Section */}
-              {selectedMetric && data.areas && data.areas.length > 0 && (
+              {/* Areas - Collapsible Section (only for breakdown metrics, not summary metrics) */}
+              {selectedMetric && selectedMetric !== 'total' && selectedMetric !== 'totalAvailable' && data.areas && data.areas.length > 0 && (
                 <div className="mt-4 bg-dark-bg rounded border border-dark-border overflow-hidden">
                   {/* Areas Header - Collapsible */}
                   <button
