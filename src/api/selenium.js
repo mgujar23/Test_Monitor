@@ -14,8 +14,12 @@ export async function fetchSeleniumTests(portalUrl) {
     log('[Selenium] Fetched portal data from:', portalUrl);
     const html = response.data;
 
-    // Extract from three specific elements only:
-    // 1. "Unique tests run" value - look for text then the next td with a number
+    // Extract from specific elements:
+    // 1. "Total available tests" value - look for the row with "Total available tests"
+    const totalAvailableMatch = html.match(/Total available tests[\s\S]*?<td[^>]*>[\s]*(\d+)/);
+    const totalAvailableTests = totalAvailableMatch ? parseInt(totalAvailableMatch[1]) : 0;
+
+    // 2. "Unique tests run" value - look for text then the next td with a number
     const totalMatch = html.match(/Unique tests run[\s\S]*?<td[^>]*>[\s]*(\d+)/);
     const totalTests = totalMatch ? parseInt(totalMatch[1]) : 0;
 
@@ -33,7 +37,6 @@ export async function fetchSeleniumTests(portalUrl) {
     // Pattern: data-dir="dir-AREANAME" ... Total: X ... Passed: Y
     const areas = [];
     let totalFailed = 0;
-    let totalAvailableTests = 0; // Sum of all area tests
 
     const areaPattern = /data-dir="dir-([^"]+)"[^>]*>[\s\S]*?<span[^>]*title="Total[^>]*>(\d+)<\/span>[\s\S]*?<span class="test-passed"[^>]*>(\d+)<\/span>/g;
     let match;
@@ -48,7 +51,6 @@ export async function fetchSeleniumTests(portalUrl) {
       const passed = parseInt(match[3]);
       const failed = total - passed;
       totalFailed += failed;
-      totalAvailableTests += total;
 
       // Create test objects matching actual pass/fail counts
       const tests = [];
@@ -116,11 +118,11 @@ export async function fetchSeleniumTests(portalUrl) {
       });
     }
 
-    log(`[Selenium] Parsed ${totalTests} unique tests run across ${areas.length} areas, ${totalAvailableTests} total available, ${totalFailed} failed`);
+    log(`[Selenium] Parsed ${totalTests} unique tests run, ${totalAvailableTests} total available, ${totalFailed} failed across ${areas.length} areas`);
 
     return {
       total: totalTests, // Unique tests run
-      totalAvailable: totalAvailableTests, // Total available tests in all areas
+      totalAvailable: totalAvailableTests, // Total available tests from portal
       failed: totalFailed,
       stale: 0,
       areas: areas
