@@ -209,8 +209,8 @@ export default function Section({ title, data, sectionKey, onClickMetric }) {
 
           {isExpanded && (
             <>
-              {/* Areas - Collapsible Section (only for breakdown metrics, not summary metrics) */}
-              {selectedMetric && selectedMetric !== 'total' && selectedMetric !== 'totalAvailable' && data.areas && data.areas.length > 0 && (
+              {/* Areas - Collapsible Section */}
+              {selectedMetric && data.areas && data.areas.length > 0 && (
                 <div className="mt-4 bg-dark-bg rounded border border-dark-border overflow-hidden">
                   {/* Areas Header - Collapsible */}
                   <button
@@ -223,7 +223,8 @@ export default function Section({ title, data, sectionKey, onClickMetric }) {
                         {selectedMetric === 'failed' && 'Areas with Failures'}
                         {selectedMetric === 'stale' && 'Stale Test Areas'}
                         {selectedMetric === 'passed' && 'Passing Tests by Area'}
-                        {selectedMetric === 'total' && 'Select an Area'}
+                        {selectedMetric === 'total' && 'Unique Tests Run by Area'}
+                        {selectedMetric === 'totalAvailable' && 'Total Available Tests by Area'}
                       </div>
                     </div>
                   </button>
@@ -256,6 +257,8 @@ export default function Section({ title, data, sectionKey, onClickMetric }) {
                                 {selectedMetric === 'failed' ? area.failed :
                                  selectedMetric === 'stale' ? area.stale :
                                  selectedMetric === 'passed' ? (area.total - area.failed) :
+                                 selectedMetric === 'total' ? area.total :
+                                 selectedMetric === 'totalAvailable' ? area.total :
                                  area.total}
                               </div>
                             </button>
