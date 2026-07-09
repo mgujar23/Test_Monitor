@@ -34,31 +34,40 @@ export async function fetchSeleniumTests(portalUrl) {
     log(`[Selenium] Extracted: Total=${totalTests}, Passed=${passedCount}, Failed=${failedCount}`);
 
     // Extract area data from test-dir-summary rows
-    // Structure: <tr class="test-dir-summary" data-dir="dir-AREANAME">
-    //            <span class="test-passed" title="Passed">X</span>
-    //            <span class="test-failed" title="Failed">Y</span>
+    // More robust parsing to handle varying HTML attributes
     const areas = [];
     let totalFailed = 0;
     let sumOfAreaTotals = 0;
 
-    // Match complete summary rows with area name and test counts
-    const areaPattern = /<tr[^>]*class="test-dir-summary"[^>]*data-dir="dir-([^"]+)"[^>]*>[\s\S]*?<span[^>]*class="test-passed"[^>]*>(\d+)<\/span>[\s\S]*?<span[^>]*class="test-failed"[^>]*>(\d+)<\/span>/g;
-    let match;
+    // First, find all summary rows (class contains test-dir-summary)
+    const summaryRowPattern = /<tr[^>]*test-dir-summary[^>]*data-dir="dir-([^"]+)"[^>]*>([\s\S]*?)<\/tr>/g;
+    let rowMatch;
 
-    while ((match = areaPattern.exec(html)) !== null) {
-      const areaName = match[1]
-        .replace(/_/g, ' ')
-        .replace(/([a-z])([A-Z])/g, '$1 $2')
-        .trim();
+    while ((rowMatch = summaryRowPattern.exec(html)) !== null) {
+      const rawAreaName = rowMatch[1];
+      const rowContent = rowMatch[2];
 
-      const passed = parseInt(match[2]);
-      const failed = parseInt(match[3]);
+      // Extract passed count from span with test-passed class
+      const passedMatch = rowContent.match(/<span[^>]*test-passed[^>]*>(\d+)<\/span>/);
+      const passed = passedMatch ? parseInt(passedMatch[1]) : 0;
+
+      // Extract failed count from span with test-failed class
+      const failedMatch = rowContent.match(/<span[^>]*test-failed[^>]*>(\d+)<\/span>/);
+      const failed = failedMatch ? parseInt(failedMatch[1]) : 0;
+
       const total = passed + failed;
-      totalFailed += failed;
-      sumOfAreaTotals += total;
 
-      // Create test objects matching actual pass/fail counts
-      const tests = [];
+      if (total > 0) {
+        const areaName = rawAreaName
+          .replace(/_/g, ' ')
+          .replace(/([a-z])([A-Z])/g, '$1 $2')
+          .trim();
+
+        totalFailed += failed;
+        sumOfAreaTotals += total;
+
+        // Create test objects matching actual pass/fail counts
+        const tests = [];
 
       // Add individual PASSED test entries (max 10)
       for (let i = 1; i <= Math.min(passed, 10); i++) {
@@ -114,13 +123,14 @@ export async function fetchSeleniumTests(portalUrl) {
         });
       }
 
-      areas.push({
-        name: areaName,
-        total: total,
-        failed: failed,
-        stale: 0,
-        tests: tests
-      });
+        areas.push({
+          name: areaName,
+          total: total,
+          failed: failed,
+          stale: 0,
+          tests: tests
+        });
+      }
     }
 
     // Account for tests not in any area (difference between total available and sum of areas)
