@@ -38,17 +38,22 @@ export async function fetchSeleniumTests(portalUrl) {
     const areasByName = {};
     let totalFailed = 0;
 
+    // Normalize area key by removing "dir-" prefix if present
+    const normalizeAreaKey = (key) => key.replace(/^dir-/, '');
+
     // Count all test content rows by area to get "Total available tests" per area
     const contentRowPattern = /<tr[^>]*data-dir="([^"]+)"[^>]*class="[^"]*test-dir-content[^"]*"[^>]*>/g;
     let contentMatch;
 
     while ((contentMatch = contentRowPattern.exec(html)) !== null) {
-      const areaKey = contentMatch[1];
+      const areaKey = normalizeAreaKey(contentMatch[1]);
       if (!areasByName[areaKey]) {
         areasByName[areaKey] = { total: 0, passed: 0, failed: 0 };
       }
       areasByName[areaKey].total++;
     }
+
+    log(`[Selenium] Found ${Object.keys(areasByName).length} areas from content rows`);
 
     // Now extract summary data (passed/failed counts) from rows with data-dir
     // Look for any row that has data-dir and contains test status spans
@@ -57,7 +62,8 @@ export async function fetchSeleniumTests(portalUrl) {
     const processedAreas = new Set();
 
     while ((rowMatch = summaryRowPattern.exec(html)) !== null) {
-      const areaKey = rowMatch[1];
+      const rawAreaKey = rowMatch[1];
+      const areaKey = normalizeAreaKey(rawAreaKey);
       const rowContent = rowMatch[2];
 
       // Skip if we've already processed this area from a summary row
@@ -85,6 +91,8 @@ export async function fetchSeleniumTests(portalUrl) {
         log(`[Selenium] Area ${areaKey}: ${passed} passed, ${failed} failed`);
       }
     }
+
+    log(`[Selenium] Processed ${processedAreas.size} areas with test counts`);
 
     // Build areas array with proper formatting
     const areas = [];
