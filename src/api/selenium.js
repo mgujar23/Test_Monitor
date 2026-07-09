@@ -37,6 +37,7 @@ export async function fetchSeleniumTests(portalUrl) {
     // Pattern: data-dir="dir-AREANAME" ... Total: X ... Passed: Y
     const areas = [];
     let totalFailed = 0;
+    let sumOfAreaTotals = 0;
 
     const areaPattern = /data-dir="dir-([^"]+)"[^>]*>[\s\S]*?<span[^>]*title="Total[^>]*>(\d+)<\/span>[\s\S]*?<span class="test-passed"[^>]*>(\d+)<\/span>/g;
     let match;
@@ -51,6 +52,7 @@ export async function fetchSeleniumTests(portalUrl) {
       const passed = parseInt(match[3]);
       const failed = total - passed;
       totalFailed += failed;
+      sumOfAreaTotals += total;
 
       // Create test objects matching actual pass/fail counts
       const tests = [];
@@ -118,7 +120,25 @@ export async function fetchSeleniumTests(portalUrl) {
       });
     }
 
-    log(`[Selenium] Parsed ${totalTests} unique tests run, ${totalAvailableTests} total available, ${totalFailed} failed across ${areas.length} areas`);
+    // Account for tests not in any area (difference between total available and sum of areas)
+    const unassignedTests = Math.max(0, totalAvailableTests - sumOfAreaTotals);
+    if (unassignedTests > 0) {
+      areas.push({
+        name: 'Unassigned / Other',
+        total: unassignedTests,
+        failed: 0,
+        stale: 0,
+        tests: [{
+          filename: `${unassignedTests} tests not assigned to any area`,
+          status: 'PASS',
+          lastPassed: 'Latest Build',
+          recentChanges: 'Unassigned tests',
+          suggestedFix: 'N/A'
+        }]
+      });
+    }
+
+    log(`[Selenium] Parsed ${totalTests} unique tests run, ${totalAvailableTests} total available (${areas.length} areas), ${totalFailed} failed`);
 
     return {
       total: totalTests, // Unique tests run
