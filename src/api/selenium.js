@@ -34,23 +34,26 @@ export async function fetchSeleniumTests(portalUrl) {
     log(`[Selenium] Extracted: Total=${totalTests}, Passed=${passedCount}, Failed=${failedCount}`);
 
     // Extract area data from test-dir-summary rows
-    // Pattern: data-dir="dir-AREANAME" ... Total: X ... Passed: Y
+    // Structure: <tr class="test-dir-summary" data-dir="dir-AREANAME">
+    //            <span class="test-passed" title="Passed">X</span>
+    //            <span class="test-failed" title="Failed">Y</span>
     const areas = [];
     let totalFailed = 0;
     let sumOfAreaTotals = 0;
 
-    const areaPattern = /data-dir="dir-([^"]+)"[^>]*>[\s\S]*?<span[^>]*title="Total[^>]*>(\d+)<\/span>[\s\S]*?<span class="test-passed"[^>]*>(\d+)<\/span>/g;
+    // Match complete summary rows with area name and test counts
+    const areaPattern = /<tr[^>]*class="test-dir-summary"[^>]*data-dir="dir-([^"]+)"[^>]*>[\s\S]*?<span[^>]*class="test-passed"[^>]*>(\d+)<\/span>[\s\S]*?<span[^>]*class="test-failed"[^>]*>(\d+)<\/span>/g;
     let match;
 
     while ((match = areaPattern.exec(html)) !== null) {
       const areaName = match[1]
         .replace(/_/g, ' ')
-        .replace(/([A-Z])/g, ' $1')
+        .replace(/([a-z])([A-Z])/g, '$1 $2')
         .trim();
 
-      const total = parseInt(match[2]);
-      const passed = parseInt(match[3]);
-      const failed = total - passed;
+      const passed = parseInt(match[2]);
+      const failed = parseInt(match[3]);
+      const total = passed + failed;
       totalFailed += failed;
       sumOfAreaTotals += total;
 
