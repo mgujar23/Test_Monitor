@@ -55,48 +55,30 @@ export async function fetchSeleniumTests(portalUrl) {
 
     log(`[Selenium] Found ${Object.keys(areasByName).length} areas from content rows`);
 
-    // Now extract summary data (passed/failed counts) from rows with data-dir
-    // Look for any row that has data-dir and contains test status spans
-    const summaryRowPattern = /<tr[^>]*data-dir="([^"]+)"[^>]*>([\s\S]*?)<\/tr>/g;
-    let rowMatch;
-    const processedAreas = new Set();
-    let rowsMatched = 0;
+    // Extract summary data (passed/failed counts) from plain text format
+    // Format: "Total = Passed + Failed" or "Total = Passed"
+    // Example: "25 = 25" or "1 = 0 + 1"
+    // The area name appears just before the summary line
+    const areaSummaryPattern = /([A-Za-z0-9_]+)\s*\n\s*(\d+)\s*=\s*(\d+)(?:\s*\+\s*(\d+))?/g;
+    let summaryMatch;
+    let areasProcessed = 0;
 
-    while ((rowMatch = summaryRowPattern.exec(html)) !== null) {
-      rowsMatched++;
-      const rawAreaKey = rowMatch[1];
-      const areaKey = normalizeAreaKey(rawAreaKey);
-      const rowContent = rowMatch[2];
+    while ((summaryMatch = areaSummaryPattern.exec(html)) !== null) {
+      const areaName = summaryMatch[1];
+      const total = parseInt(summaryMatch[2]);
+      const passed = parseInt(summaryMatch[3]);
+      const failed = summaryMatch[4] ? parseInt(summaryMatch[4]) : (total - passed);
 
-      // Skip if we've already processed this area from a summary row
-      if (processedAreas.has(areaKey)) continue;
-
-      // Extract passed count from span with test-passed class
-      const passedMatch = rowContent.match(/<span[^>]*test-passed[^>]*>(\d+)<\/span>/);
-      const passed = passedMatch ? parseInt(passedMatch[1]) : 0;
-
-      // Extract failed count from span with test-failed class
-      const failedMatch = rowContent.match(/<span[^>]*test-failed[^>]*>(\d+)<\/span>/);
-      const failed = failedMatch ? parseInt(failedMatch[1]) : 0;
-
-      log(`[Selenium] Row ${rowsMatched}: ${areaKey} - passed=${passed}, failed=${failed}`);
-
-      // Process any row with passed or failed (or both)
-      if (passed >= 0 && failed >= 0) {
-        if (!areasByName[areaKey]) {
-          areasByName[areaKey] = { total: 0, passed: 0, failed: 0 };
-        }
-
-        areasByName[areaKey].passed = passed;
-        areasByName[areaKey].failed = failed;
+      if (areasByName[areaName]) {
+        areasByName[areaName].passed = passed;
+        areasByName[areaName].failed = failed;
         totalFailed += failed;
-        processedAreas.add(areaKey);
-
-        log(`[Selenium] → Area ${areaKey}: ${passed} passed, ${failed} failed`);
+        areasProcessed++;
+        log(`[Selenium] → Area ${areaName}: ${total} total = ${passed} passed + ${failed} failed`);
       }
     }
 
-    log(`[Selenium] Matched ${rowsMatched} rows with data-dir, processed ${processedAreas.size} areas`);
+    log(`[Selenium] Processed ${areasProcessed} areas with summary counts`);
 
     // Build areas array with proper formatting
     const areas = [];
