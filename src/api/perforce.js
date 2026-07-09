@@ -11,13 +11,30 @@ export async function fetchNewTestsAdded(config) {
 
     const serverUrl = p4Config.serverUrl;
     const username = p4Config.username;
-    const apiToken = p4Config.apiToken || p4Config.password;
+    const password = p4Config.apiToken || p4Config.password;
     const depotPath = p4Config.depotPath;
 
-    console.log('[P4] Using p4 CLI to fetch changes from:', depotPath);
-    console.log('[P4] Connecting to:', serverUrl, 'as user:', username);
+    log('[P4] Using p4 CLI to fetch changes from:', depotPath);
+    log('[P4] Connecting to:', serverUrl, 'as user:', username);
 
     try {
+      // Attempt to re-authenticate with Perforce
+      if (password) {
+        try {
+          log('[P4] Attempting to refresh authentication...');
+          execSync(`echo "${password}" | p4 -p ${serverUrl} -u ${username} login -a`, {
+            encoding: 'utf-8',
+            env: { ...process.env, P4PORT: serverUrl, P4USER: username },
+            stdio: 'pipe'
+          });
+          log('[P4] Authentication refreshed successfully');
+        } catch (authErr) {
+          warn('[P4] Authentication refresh failed, continuing with existing ticket:', authErr.message);
+        }
+      } else {
+        log('[P4] No password in config, using cached ticket');
+      }
+
       // Get changes from all years - fetch more history (1000 changes covers ~2-3 years of activity)
       const changesCmd = `p4 -p ${serverUrl} -u ${username} changes -m 1000 "${depotPath}/..."`;
       log('[P4] Running command: p4 changes...');
@@ -125,13 +142,13 @@ export async function fetchNewTestsAdded(config) {
 
       return groupedData;
 
-    } catch (error) {
-      error('[P4] p4 CLI error:', error.message);
+    } catch (err) {
+      error('[P4] p4 CLI error:', err.message);
       return getDefaultNewTestsData();
     }
 
-  } catch (error) {
-    console.error('[P4] Error fetching from Perforce:', error.message);
+  } catch (err) {
+    error('[P4] Error fetching from Perforce:', err.message);
     return getDefaultNewTestsData();
   }
 }
