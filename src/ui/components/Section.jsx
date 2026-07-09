@@ -216,11 +216,35 @@ export default function Section({ title, data, sectionKey, onClickMetric }) {
             ))}
           </div>
 
-          {/* Selenium Portal Link */}
+          {/* Portal Links */}
           {sectionKey === 'selenium' && (
             <div className="flex justify-end mb-4">
               <a
                 href="https://cluster-c30.dev-rd.forcepoint.net/selenium/portal_results/?all=yes"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-400 hover:text-blue-300 text-xs underline"
+              >
+                Click here for more details →
+              </a>
+            </div>
+          )}
+          {sectionKey === 'integrationTests' && (
+            <div className="flex justify-end mb-4">
+              <a
+                href="https://jenkins.infra-dev.forcepoint.net/job/Projects/job/Test/job/IntegrationTests/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-400 hover:text-blue-300 text-xs underline"
+              >
+                Click here for more details →
+              </a>
+            </div>
+          )}
+          {sectionKey === 'smokeTests' && (
+            <div className="flex justify-end mb-4">
+              <a
+                href="https://jenkins.infra-dev.forcepoint.net/job/Projects/job/Test/job/SmokeTest/"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-blue-400 hover:text-blue-300 text-xs underline"
