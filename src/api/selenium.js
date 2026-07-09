@@ -63,7 +63,13 @@ export async function fetchSeleniumTests(portalUrl) {
     let areasProcessed = 0;
     let summaryMatches = 0;
 
-    log(`[Selenium] Looking for test-dir-summary rows with ${Object.keys(areasByName).length} known areas`);
+    log(`[Selenium] Looking for test-dir-summary rows`);
+    log(`[Selenium] Known areas from content rows (${Object.keys(areasByName).length}): ${Object.keys(areasByName).join(', ')}`);
+
+    // Test the pattern
+    const testPattern = /<tr[^>]*test-dir-summary/g;
+    const testMatches = html.match(testPattern);
+    log(`[Selenium] Found ${testMatches ? testMatches.length : 0} rows with 'test-dir-summary' class`);
 
     while ((summaryMatch = summaryRowPattern.exec(html)) !== null) {
       summaryMatches++;
@@ -83,20 +89,21 @@ export async function fetchSeleniumTests(portalUrl) {
       const failedMatch = rowContent.match(/<span[^>]*class="[^"]*test-failed[^"]*"[^>]*>(\d+)<\/span>/);
       const failed = failedMatch ? parseInt(failedMatch[1]) : 0;
 
-      log(`[Selenium] Found summary row #${summaryMatches}: ${areaKey} - total=${total}, passed=${passed}, failed=${failed}`);
+      log(`[Selenium] Summary row #${summaryMatches}: raw="${rawAreaKey}" normalized="${areaKey}"`);
+      log(`[Selenium]   → counts: total=${total}, passed=${passed}, failed=${failed}`);
 
       if (areasByName[areaKey]) {
         areasByName[areaKey].passed = passed;
         areasByName[areaKey].failed = failed;
         totalFailed += failed;
         areasProcessed++;
-        log(`[Selenium] ✓ Area ${areaKey}: ${total} = ${passed} + ${failed}`);
+        log(`[Selenium]   ✓ MATCHED to known area`);
       } else {
-        log(`[Selenium] ✗ Area key not found: ${areaKey} (known: ${Object.keys(areasByName).join(', ')})`);
+        log(`[Selenium]   ✗ NOT FOUND in known areas`);
       }
     }
 
-    log(`[Selenium] Processed ${areasProcessed} areas with summary data (found ${summaryMatches} summary rows)`);
+    log(`[Selenium] Summary extraction: ${summaryMatches} rows found, ${areasProcessed} areas matched`);
 
     // Build areas array with proper formatting
     const areas = [];
