@@ -18,22 +18,8 @@ export async function fetchNewTestsAdded(config) {
     log('[P4] Connecting to:', serverUrl, 'as user:', username);
 
     try {
-      // Attempt to re-authenticate with Perforce
-      if (password) {
-        try {
-          log('[P4] Attempting to refresh authentication...');
-          execSync(`echo "${password}" | p4 -p ${serverUrl} -u ${username} login -a`, {
-            encoding: 'utf-8',
-            env: { ...process.env, P4PORT: serverUrl, P4USER: username },
-            stdio: 'pipe'
-          });
-          log('[P4] Authentication refreshed successfully');
-        } catch (authErr) {
-          warn('[P4] Authentication refresh failed, continuing with existing ticket:', authErr.message);
-        }
-      } else {
-        log('[P4] No password in config, using cached ticket');
-      }
+      // Use cached P4 ticket from ~/.p4tickets (created by 'p4 login')
+      log('[P4] Using cached P4 ticket for authentication');
 
       // Get changes from all years - fetch more history (1000 changes covers ~2-3 years of activity)
       const changesCmd = `p4 -p ${serverUrl} -u ${username} changes -m 1000 "${depotPath}/..."`;
@@ -45,7 +31,12 @@ export async function fetchNewTestsAdded(config) {
       });
 
       const changeLines = changesOutput.trim().split('\n').filter(line => line.length > 0);
-      log('[P4] Found', changeLines.length, 'changes');
+      log('[P4] Found', changeLines.length, 'changes from p4');
+
+      if (changeLines.length === 0) {
+        warn('[P4] No changes found in depot');
+        return getDefaultNewTestsData();
+      }
 
       // Debug: Show date range of changes
       const firstLine = changeLines[0];
@@ -54,11 +45,6 @@ export async function fetchNewTestsAdded(config) {
       const lastMatch = lastLine.match(/on\s+(\d{4}\/\d{2}\/\d{2})/);
       if (firstMatch && lastMatch) {
         log('[P4] Date range: ', lastMatch[1], ' to ', firstMatch[1]);
-      }
-
-      if (changeLines.length === 0) {
-        warn('[P4] No changes found');
-        return getDefaultNewTestsData();
       }
 
       // Parse changes and extract file information
@@ -125,7 +111,8 @@ export async function fetchNewTestsAdded(config) {
       log('[P4] Found', commits.length, 'test file changes');
 
       if (commits.length === 0) {
-        warn('[P4] No test files found in changes');
+        warn('[P4] No test files found in changes - check if file patterns match');
+        log('[P4] Sample: Run "p4 describe -s <change#>" manually to verify file output format');
         return getDefaultNewTestsData();
       }
 
