@@ -60,8 +60,10 @@ export async function fetchSeleniumTests(portalUrl) {
     const summaryRowPattern = /<tr[^>]*data-dir="([^"]+)"[^>]*>([\s\S]*?)<\/tr>/g;
     let rowMatch;
     const processedAreas = new Set();
+    let rowsMatched = 0;
 
     while ((rowMatch = summaryRowPattern.exec(html)) !== null) {
+      rowsMatched++;
       const rawAreaKey = rowMatch[1];
       const areaKey = normalizeAreaKey(rawAreaKey);
       const rowContent = rowMatch[2];
@@ -77,8 +79,10 @@ export async function fetchSeleniumTests(portalUrl) {
       const failedMatch = rowContent.match(/<span[^>]*test-failed[^>]*>(\d+)<\/span>/);
       const failed = failedMatch ? parseInt(failedMatch[1]) : 0;
 
-      // Only process if we found counts (summary rows have both)
-      if (passed > 0 || failed > 0) {
+      log(`[Selenium] Row ${rowsMatched}: ${areaKey} - passed=${passed}, failed=${failed}`);
+
+      // Process any row with passed or failed (or both)
+      if (passed >= 0 && failed >= 0) {
         if (!areasByName[areaKey]) {
           areasByName[areaKey] = { total: 0, passed: 0, failed: 0 };
         }
@@ -88,11 +92,11 @@ export async function fetchSeleniumTests(portalUrl) {
         totalFailed += failed;
         processedAreas.add(areaKey);
 
-        log(`[Selenium] Area ${areaKey}: ${passed} passed, ${failed} failed`);
+        log(`[Selenium] → Area ${areaKey}: ${passed} passed, ${failed} failed`);
       }
     }
 
-    log(`[Selenium] Processed ${processedAreas.size} areas with test counts`);
+    log(`[Selenium] Matched ${rowsMatched} rows with data-dir, processed ${processedAreas.size} areas`);
 
     // Build areas array with proper formatting
     const areas = [];
