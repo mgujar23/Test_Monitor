@@ -50,13 +50,18 @@ export async function fetchSeleniumTests(portalUrl) {
       areasByName[areaKey].total++;
     }
 
-    // Now extract summary data (passed/failed counts) from summary rows
-    const summaryRowPattern = /<tr[^>]*test-dir-summary[^>]*data-dir="([^"]+)"[^>]*>([\s\S]*?)<\/tr>/g;
+    // Now extract summary data (passed/failed counts) from rows with data-dir
+    // Look for any row that has data-dir and contains test status spans
+    const summaryRowPattern = /<tr[^>]*data-dir="([^"]+)"[^>]*>([\s\S]*?)<\/tr>/g;
     let rowMatch;
+    const processedAreas = new Set();
 
     while ((rowMatch = summaryRowPattern.exec(html)) !== null) {
       const areaKey = rowMatch[1];
       const rowContent = rowMatch[2];
+
+      // Skip if we've already processed this area from a summary row
+      if (processedAreas.has(areaKey)) continue;
 
       // Extract passed count from span with test-passed class
       const passedMatch = rowContent.match(/<span[^>]*test-passed[^>]*>(\d+)<\/span>/);
@@ -66,13 +71,19 @@ export async function fetchSeleniumTests(portalUrl) {
       const failedMatch = rowContent.match(/<span[^>]*test-failed[^>]*>(\d+)<\/span>/);
       const failed = failedMatch ? parseInt(failedMatch[1]) : 0;
 
-      if (!areasByName[areaKey]) {
-        areasByName[areaKey] = { total: 0, passed: 0, failed: 0 };
-      }
+      // Only process if we found counts (summary rows have both)
+      if (passed > 0 || failed > 0) {
+        if (!areasByName[areaKey]) {
+          areasByName[areaKey] = { total: 0, passed: 0, failed: 0 };
+        }
 
-      areasByName[areaKey].passed = passed;
-      areasByName[areaKey].failed = failed;
-      totalFailed += failed;
+        areasByName[areaKey].passed = passed;
+        areasByName[areaKey].failed = failed;
+        totalFailed += failed;
+        processedAreas.add(areaKey);
+
+        log(`[Selenium] Area ${areaKey}: ${passed} passed, ${failed} failed`);
+      }
     }
 
     // Build areas array with proper formatting
