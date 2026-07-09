@@ -184,6 +184,7 @@ export async function fetchSeleniumTests(portalUrl) {
         areas.push({
           name: areaName,
           total: total,
+          passed: passed,
           failed: failed,
           stale: 0,
           tests: tests
