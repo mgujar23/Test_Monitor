@@ -126,6 +126,15 @@ export default function Section({ title, data, sectionKey, onClickMetric }) {
     const passed = (data.total || 0) - (data.failed || 0);
     const passingPercentage = data.total > 0 ? ((passed / data.total) * 100).toFixed(2) : '0.00';
 
+    // Debug logging
+    if (sectionKey === 'selenium') {
+      console.log('Selenium data:', {
+        total: data.total,
+        areas: data.areas ? `${data.areas.length} areas` : 'undefined',
+        areasAvailable: data.areasAvailable ? `${data.areasAvailable.length} areas` : 'undefined'
+      });
+    }
+
     // Get the appropriate areas array based on selected metric
     const getAreasArray = () => {
       if (selectedMetric === 'totalAvailable') {
