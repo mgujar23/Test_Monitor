@@ -117,10 +117,12 @@ export async function fetchSeleniumTests(portalUrl) {
         .trim();
 
       const total = counts.total;
-      if (total > 0) {
+      const passed = counts.passed || 0;
+      const failed = counts.failed || 0;
+
+      // Include area if it has content rows OR if it has summary data (passed/failed)
+      if (total > 0 || passed > 0 || failed > 0) {
         sumOfAreaTotals += total;
-        const passed = counts.passed || 0;
-        const failed = counts.failed || 0;
 
         // Create test objects matching actual pass/fail counts
         const tests = [];
