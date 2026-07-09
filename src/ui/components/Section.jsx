@@ -218,14 +218,14 @@ export default function Section({ title, data, sectionKey, onClickMetric }) {
 
           {/* Selenium Portal Link */}
           {sectionKey === 'selenium' && (
-            <div className="mb-4 p-3 bg-blue-900/20 border border-blue-700/50 rounded">
+            <div className="flex justify-end mb-4">
               <a
                 href="https://cluster-c30.dev-rd.forcepoint.net/selenium/portal_results/?all=yes"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-blue-400 hover:text-blue-300 text-sm font-semibold underline"
+                className="text-blue-400 hover:text-blue-300 text-xs underline"
               >
-                → Click here for more details
+                Click here for more details →
               </a>
             </div>
           )}
