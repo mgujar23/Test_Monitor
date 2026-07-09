@@ -93,6 +93,10 @@ export async function fetchSeleniumTests(portalUrl) {
       log(`[Selenium]   → counts: total=${total}, passed=${passed}, failed=${failed}`);
 
       if (areasByName[areaKey]) {
+        // Set total from summary if content rows didn't populate it
+        if (areasByName[areaKey].total === 0) {
+          areasByName[areaKey].total = total;
+        }
         areasByName[areaKey].passed = passed;
         areasByName[areaKey].failed = failed;
         totalFailed += failed;
