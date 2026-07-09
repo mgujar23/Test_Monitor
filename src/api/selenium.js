@@ -62,23 +62,31 @@ export async function fetchSeleniumTests(portalUrl) {
     const areaSummaryPattern = /([A-Za-z0-9_]+)\s*\n\s*(\d+)\s*=\s*(\d+)(?:\s*\+\s*(\d+))?/g;
     let summaryMatch;
     let areasProcessed = 0;
+    let summaryMatches = 0;
+
+    log(`[Selenium] Looking for summary pattern with ${Object.keys(areasByName).length} known areas: ${Object.keys(areasByName).join(', ')}`);
 
     while ((summaryMatch = areaSummaryPattern.exec(html)) !== null) {
+      summaryMatches++;
       const areaName = summaryMatch[1];
       const total = parseInt(summaryMatch[2]);
       const passed = parseInt(summaryMatch[3]);
       const failed = summaryMatch[4] ? parseInt(summaryMatch[4]) : (total - passed);
+
+      log(`[Selenium] Found summary match #${summaryMatches}: "${areaName}" = ${total} (${passed}+${failed})`);
 
       if (areasByName[areaName]) {
         areasByName[areaName].passed = passed;
         areasByName[areaName].failed = failed;
         totalFailed += failed;
         areasProcessed++;
-        log(`[Selenium] → Area ${areaName}: ${total} total = ${passed} passed + ${failed} failed`);
+        log(`[Selenium] ✓ Matched to known area: ${areaName}: ${total} total = ${passed} passed + ${failed} failed`);
+      } else {
+        log(`[Selenium] ✗ Area not in list: ${areaName}`);
       }
     }
 
-    log(`[Selenium] Processed ${areasProcessed} areas with summary counts`);
+    log(`[Selenium] Summary: found ${summaryMatches} summary patterns, processed ${areasProcessed} areas`);
 
     // Build areas array with proper formatting
     const areas = [];
