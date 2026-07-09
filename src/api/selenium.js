@@ -55,38 +55,48 @@ export async function fetchSeleniumTests(portalUrl) {
 
     log(`[Selenium] Found ${Object.keys(areasByName).length} areas from content rows`);
 
-    // Extract summary data (passed/failed counts) from plain text format
-    // Format: "Total = Passed + Failed" or "Total = Passed"
-    // Example: "25 = 25" or "1 = 0 + 1"
-    // The area name appears just before the summary line
-    const areaSummaryPattern = /([A-Za-z0-9_]+)\s*\n\s*(\d+)\s*=\s*(\d+)(?:\s*\+\s*(\d+))?/g;
+    // Extract summary data from test-dir-summary rows
+    // Format: <tr class="test-dir-summary" data-dir="dir-{AREA}">
+    //   <span>Total</span> = <span class="test-passed">Passed</span> [+ <span class="test-failed">Failed</span>]
+    const summaryRowPattern = /<tr[^>]*class="[^"]*test-dir-summary[^"]*"[^>]*data-dir="dir-([^"]+)"[^>]*>([\s\S]*?)<\/tr>/g;
     let summaryMatch;
     let areasProcessed = 0;
     let summaryMatches = 0;
 
-    log(`[Selenium] Looking for summary pattern with ${Object.keys(areasByName).length} known areas: ${Object.keys(areasByName).join(', ')}`);
+    log(`[Selenium] Looking for test-dir-summary rows with ${Object.keys(areasByName).length} known areas`);
 
-    while ((summaryMatch = areaSummaryPattern.exec(html)) !== null) {
+    while ((summaryMatch = summaryRowPattern.exec(html)) !== null) {
       summaryMatches++;
-      const areaName = summaryMatch[1];
-      const total = parseInt(summaryMatch[2]);
-      const passed = parseInt(summaryMatch[3]);
-      const failed = summaryMatch[4] ? parseInt(summaryMatch[4]) : (total - passed);
+      const rawAreaKey = summaryMatch[1];
+      const areaKey = normalizeAreaKey(rawAreaKey);
+      const rowContent = summaryMatch[2];
 
-      log(`[Selenium] Found summary match #${summaryMatches}: "${areaName}" = ${total} (${passed}+${failed})`);
+      // Extract total from first span
+      const totalMatch = rowContent.match(/<span[^>]*>(\d+)<\/span>/);
+      const total = totalMatch ? parseInt(totalMatch[1]) : 0;
 
-      if (areasByName[areaName]) {
-        areasByName[areaName].passed = passed;
-        areasByName[areaName].failed = failed;
+      // Extract passed from span with test-passed class
+      const passedMatch = rowContent.match(/<span[^>]*class="[^"]*test-passed[^"]*"[^>]*>(\d+)<\/span>/);
+      const passed = passedMatch ? parseInt(passedMatch[1]) : 0;
+
+      // Extract failed from span with test-failed class
+      const failedMatch = rowContent.match(/<span[^>]*class="[^"]*test-failed[^"]*"[^>]*>(\d+)<\/span>/);
+      const failed = failedMatch ? parseInt(failedMatch[1]) : 0;
+
+      log(`[Selenium] Found summary row #${summaryMatches}: ${areaKey} - total=${total}, passed=${passed}, failed=${failed}`);
+
+      if (areasByName[areaKey]) {
+        areasByName[areaKey].passed = passed;
+        areasByName[areaKey].failed = failed;
         totalFailed += failed;
         areasProcessed++;
-        log(`[Selenium] ✓ Matched to known area: ${areaName}: ${total} total = ${passed} passed + ${failed} failed`);
+        log(`[Selenium] ✓ Area ${areaKey}: ${total} = ${passed} + ${failed}`);
       } else {
-        log(`[Selenium] ✗ Area not in list: ${areaName}`);
+        log(`[Selenium] ✗ Area key not found: ${areaKey} (known: ${Object.keys(areasByName).join(', ')})`);
       }
     }
 
-    log(`[Selenium] Summary: found ${summaryMatches} summary patterns, processed ${areasProcessed} areas`);
+    log(`[Selenium] Processed ${areasProcessed} areas with summary data (found ${summaryMatches} summary rows)`);
 
     // Build areas array with proper formatting
     const areas = [];
