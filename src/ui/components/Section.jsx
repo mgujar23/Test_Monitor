@@ -168,12 +168,17 @@ export default function Section({ title, data, sectionKey, onClickMetric }) {
 
           {/* Metric Boxes - Always Visible */}
           <div className="grid grid-cols-4 gap-3 mb-4">
-            {[
+            {(sectionKey === 'selenium' ? [
+              { key: 'total', label: 'Unique tests run', value: data.total || 0 },
+              { key: 'totalAvailable', label: 'Total available tests', value: data.totalAvailable || 0 },
+              { key: 'failed', label: 'Failed tests', value: data.failed || 0 },
+              { key: 'passed', label: 'Pass tests', value: passed }
+            ] : [
               { key: 'total', label: 'Total tests', value: data.total || 0 },
               { key: 'failed', label: 'Failed tests', value: data.failed || 0 },
               { key: 'passed', label: 'Pass tests', value: passed },
               { key: 'stale', label: 'Stale tests', value: data.stale || 0 }
-            ].map((metric) => (
+            ]).map((metric) => (
               <button
                 key={metric.key}
                 onClick={() => {
@@ -193,6 +198,7 @@ export default function Section({ title, data, sectionKey, onClickMetric }) {
                   metric.key === 'failed' ? 'text-red-400' :
                   metric.key === 'stale' ? 'text-yellow-400' :
                   metric.key === 'passed' ? 'text-green-400' :
+                  metric.key === 'totalAvailable' ? 'text-blue-400' :
                   'text-white'
                 }`}>
                   {metric.value}

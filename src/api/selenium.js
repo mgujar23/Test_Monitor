@@ -33,6 +33,7 @@ export async function fetchSeleniumTests(portalUrl) {
     // Pattern: data-dir="dir-AREANAME" ... Total: X ... Passed: Y
     const areas = [];
     let totalFailed = 0;
+    let totalAvailableTests = 0; // Sum of all area tests
 
     const areaPattern = /data-dir="dir-([^"]+)"[^>]*>[\s\S]*?<span[^>]*title="Total[^>]*>(\d+)<\/span>[\s\S]*?<span class="test-passed"[^>]*>(\d+)<\/span>/g;
     let match;
@@ -47,6 +48,7 @@ export async function fetchSeleniumTests(portalUrl) {
       const passed = parseInt(match[3]);
       const failed = total - passed;
       totalFailed += failed;
+      totalAvailableTests += total;
 
       // Create test objects matching actual pass/fail counts
       const tests = [];
@@ -114,10 +116,11 @@ export async function fetchSeleniumTests(portalUrl) {
       });
     }
 
-    log(`[Selenium] Parsed ${totalTests} total tests across ${areas.length} areas, ${totalFailed} failed`);
+    log(`[Selenium] Parsed ${totalTests} unique tests run across ${areas.length} areas, ${totalAvailableTests} total available, ${totalFailed} failed`);
 
     return {
-      total: totalTests,
+      total: totalTests, // Unique tests run
+      totalAvailable: totalAvailableTests, // Total available tests in all areas
       failed: totalFailed,
       stale: 0,
       areas: areas
