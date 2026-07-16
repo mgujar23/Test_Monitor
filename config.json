@@ -8,6 +8,12 @@
       "smokeTests": "/job/Projects/job/Test/job/SmokeTest/"
     }
   },
+  "reportingJenkins": {
+    "baseUrl": "https://jenkins.cicd.cloud.fpdev.io",
+    "username": "minal.gujar@forcepoint.com",
+    "apiToken": "1129daa9f93befe300a343b83c12538efc",
+    "jobPath": "/job/GHE-CSG-DEV/job/csg_service-reporting/job/master/"
+  },
   "selenium": {
     "portalUrl": "https://cluster-c30.dev-rd.forcepoint.net/selenium/portal_results/?all=yes"
   },
@@ -24,7 +30,7 @@
   "perforce": {
     "serverUrl": "perforce.cicd.cloud.fpdev.io:1666",
     "username": "minal.gujar",
-    "apiToken": "2C2F821ECE08DA816DD91EBAF64EF419",
+    "apiToken": "FDB3D1A0BF2BBF60D4AE27A83DCF0601",
     "depotPath": "//code_SaaS/csg_service/portal_ui/dev/portal/tests/selenium/portal_tests"
   },
   "app": {

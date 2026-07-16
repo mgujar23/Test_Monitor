@@ -72,8 +72,8 @@ export function generateAIInsights(dashboardData) {
     insights.improvementMilestones = calculateMilestones(insights.passRate);
 
     return insights;
-  } catch (error) {
-    error('[AI] Error generating insights:', error.message);
+  } catch (err) {
+    error('[AI] Error generating insights:', err.message);
     return {
       healthScore: 75,
       passRate: 95,

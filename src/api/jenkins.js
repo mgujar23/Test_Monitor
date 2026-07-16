@@ -2,6 +2,10 @@ import axios from 'axios';
 import https from 'https';
 import { log, warn, error } from '../server/logger.js';
 
+const httpsAgent = new https.Agent({
+  rejectUnauthorized: false
+});
+
 export async function fetchReadyClusterTests(config) {
   try {
     const baseUrl = config.jenkins.baseUrl;
@@ -13,12 +17,13 @@ export async function fetchReadyClusterTests(config) {
 
     const response = await axios.get(jobUrl, {
       auth: { username: 'mgujar', password: apiToken },
-      timeout: 10000
+      timeout: 10000,
+      httpsAgent: httpsAgent
     });
 
     const jobData = response.data;
-    const lastBuild = jobData.lastBuild;
-    log('[ReadyCluster] Got job data, lastBuild:', lastBuild?.number);
+    const lastBuild = jobData.lastCompletedBuild || jobData.lastBuild;
+    log('[ReadyCluster] Got job data, lastCompletedBuild:', lastBuild?.number);
 
     if (!lastBuild) {
       return {
@@ -33,7 +38,8 @@ export async function fetchReadyClusterTests(config) {
     const buildUrl = `${baseUrl}${jobPath}${lastBuild.number}/api/json`;
     const buildResponse = await axios.get(buildUrl, {
       auth: { username: 'mgujar', password: apiToken },
-      timeout: 10000
+      timeout: 10000,
+      httpsAgent: httpsAgent
     });
 
     const buildData = buildResponse.data;
@@ -73,7 +79,8 @@ export async function fetchReadyClusterTests(config) {
 
       const buildsResponse = await axios.get(buildsUrl, {
         auth: { username: 'mgujar', password: apiToken },
-        timeout: 15000
+        timeout: 15000,
+        httpsAgent: httpsAgent
       });
 
       const builds = buildsResponse.data.builds || [];
@@ -127,8 +134,8 @@ export async function fetchReadyClusterTests(config) {
       });
 
       log('[ReadyCluster] Found', recentChanges.length, 'changes from last month');
-    } catch (error) {
-      warn('[ReadyCluster] Could not fetch changes:', error.message);
+    } catch (err) {
+      warn('[ReadyCluster] Could not fetch changes:', err.message);
       warn('[ReadyCluster] Error details:', error.response?.status, error.response?.statusText);
       warn('[ReadyCluster] Tried URL:', `${baseUrl}${jobPath}api/json?limit=100`);
     }
@@ -165,8 +172,8 @@ export async function fetchReadyClusterTests(config) {
             });
           });
         }
-      } catch (error) {
-        warn('[ReadyCluster] Could not fetch from lastSuccessfulBuild:', error.message);
+      } catch (err) {
+        warn('[ReadyCluster] Could not fetch from lastSuccessfulBuild:', err.message);
       }
     }
 
@@ -221,8 +228,8 @@ export async function fetchReadyClusterTests(config) {
         } else {
           warn('[ReadyCluster] Perforce config not found');
         }
-      } catch (error) {
-        error('[ReadyCluster] Perforce fetch error:', error.message);
+      } catch (err) {
+        error('[ReadyCluster] Perforce fetch error:', err.message);
       }
     }
 
@@ -247,8 +254,8 @@ export async function fetchReadyClusterTests(config) {
       stale: 0,
       areas: []
     };
-  } catch (error) {
-    error('Error fetching Ready Cluster tests:', error.message);
+  } catch (err) {
+    error('Error fetching Ready Cluster tests:', err.message);
     return { builds: [], changes: [], total: 0, failed: 0, stale: 0, areas: [] };
   }
 }
@@ -306,8 +313,8 @@ function getIntegrationTestData(totalTestCount = 308187, failedTestCount = 813) 
     const tests = [];
     const prefix = `test_${areaName.toLowerCase().replace(/\s+/g, '_')}`;
 
-    // Generate approximately 1 file per 10 tests, minimum 1 file
-    const numFiles = Math.max(1, Math.ceil(total / 10));
+    // Limit to max 3 files per area for performance - show representative failures only
+    const numFiles = Math.min(3, Math.max(1, Math.ceil(total / 50)));
 
     // Distribute failures across files
     let failuresRemaining = failed;
@@ -387,7 +394,8 @@ export async function fetchIntegrationTests(config) {
 
         const htmlResponse = await axios.get(htmlUrl, {
           auth: { username: 'mgujar', password: apiToken },
-          timeout: 15000
+          timeout: 15000,
+          httpsAgent: httpsAgent
         });
 
         const html = htmlResponse.data;
@@ -451,8 +459,8 @@ export async function fetchIntegrationTests(config) {
           totalTests += subJob.totalTests;
         }
 
-      } catch (error) {
-        error(`[Integration] Error fetching ${subJob.name}:`, error.message);
+      } catch (err) {
+        error(`[Integration] Error fetching ${subJob.name}:`, err.message);
         totalTests += subJob.totalTests;
       }
     }
@@ -468,8 +476,8 @@ export async function fetchIntegrationTests(config) {
       areas: getIntegrationTestData(totalTests, totalFailed).areas
     };
 
-  } catch (error) {
-    error('[Integration] Fatal error:', error.message);
+  } catch (err) {
+    error('[Integration] Fatal error:', err.message);
     return getIntegrationTestData(0, 0);
   }
 }
@@ -508,8 +516,8 @@ function getSmokeTestData(totalTestCount = 85, failedTestCount = 4) {
     const tests = [];
     const prefix = `test_${areaName.toLowerCase().replace(/\s+/g, '_')}`;
 
-    // Generate approximately 1 file per 10 tests, minimum 1 file
-    const numFiles = Math.max(1, Math.ceil(total / 10));
+    // Limit to max 3 files per area for performance - show representative failures only
+    const numFiles = Math.min(3, Math.max(1, Math.ceil(total / 50)));
 
     // Distribute failures across files
     let failuresRemaining = failed;
@@ -578,7 +586,8 @@ export async function fetchSmokeTests(config) {
 
     const testReportResponse = await axios.get(testReportUrl, {
       auth: { username: 'mgujar', password: apiToken },
-      timeout: 15000
+      timeout: 15000,
+      httpsAgent: httpsAgent
     });
 
     const testReport = testReportResponse.data;
@@ -598,8 +607,8 @@ export async function fetchSmokeTests(config) {
       return getSmokeTestData();
     }
 
-  } catch (error) {
-    error('[Smoke] Error fetching Smoke Tests:', error.message);
+  } catch (err) {
+    error('[Smoke] Error fetching Smoke Tests:', err.message);
     // Fallback: try to fetch from last completed build
     try {
       const baseUrl = config.jenkins.baseUrl;
@@ -611,7 +620,8 @@ export async function fetchSmokeTests(config) {
 
       const fallbackResponse = await axios.get(fallbackUrl, {
         auth: { username: 'mgujar', password: apiToken },
-        timeout: 15000
+        timeout: 15000,
+        httpsAgent: httpsAgent
       });
 
       const testReport = fallbackResponse.data;
@@ -621,8 +631,8 @@ export async function fetchSmokeTests(config) {
 
       log('[Smoke] Fallback FETCHED: Total=' + totalTestCount + ', Failed=' + failedCount);
       return getSmokeTestData(totalTestCount, failedCount);
-    } catch (fallbackError) {
-      error('[Smoke] Fallback also failed:', fallbackError.message);
+    } catch (err) {
+      error('[Smoke] Fallback also failed:', err.message);
       return getSmokeTestData();
     }
   }

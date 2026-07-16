@@ -57,10 +57,10 @@ export async function performRefresh(config) {
 
     const duration = Date.now() - startTime;
     log(`[Jobs] Dashboard refresh completed in ${duration}ms`);
-  } catch (error) {
-    error('[Jobs] Error during refresh:', error);
+  } catch (err) {
+    error('[Jobs] Error during refresh:', err.message);
     jobState.lastError = {
-      message: error.message,
+      message: err.message,
       timestamp: new Date().toISOString()
     };
   } finally {

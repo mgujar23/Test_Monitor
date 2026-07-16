@@ -2,6 +2,8 @@ import { log, warn, error } from '../server/logger.js';
 import { fetchReadyClusterTests, fetchIntegrationTests, fetchSmokeTests } from './jenkins.js';
 import { fetchSeleniumTests } from './selenium.js';
 import { fetchNewTestsAdded } from './perforce.js';
+import { fetchProxyStatus, fetchProxyLogs } from './proxy.js';
+import { fetchCSGServiceReporting, fetchCSTOREReporting, fetchETLSIEM, fetchETLSIEMClusterTest, fetchReportingMetrics } from './reporting.js';
 import { aggregateSectionData, formatTimestamp, loadFixesFile } from './utils.js';
 import { generateAIInsights } from './ai-insights.js';
 
@@ -16,7 +18,14 @@ export async function aggregateDashboardData(config) {
       selenium: { total: 0, failed: 0, stale: 0, areas: [] },
       integrationTests: { total: 0, failed: 0, stale: 0, areas: [] },
       smokeTests: { total: 0, failed: 0, stale: 0, areas: [] },
-      newTestsAdded: { yearly: [] }
+      newTestsAdded: { yearly: [] },
+      proxyStatus: { total: 0, failed: 0, stale: 0, areas: [] },
+      proxyLogs: { total: 0, failed: 0, stale: 0, areas: [] },
+      csgServiceReporting: {},
+      cstoreReporting: {},
+      etlSIEM: {},
+      etlSIEMCluster: {},
+      reportingMetrics: { total: 0, failed: 0, stale: 0, areas: [] }
     },
     aiInsights: {
       healthScore: 0,
@@ -31,12 +40,19 @@ export async function aggregateDashboardData(config) {
 
   try {
     // Fetch from all sources in parallel
-    const [readyCluster, selenium, integration, smoke, newTests] = await Promise.allSettled([
+    const [readyCluster, selenium, integration, smoke, newTests, proxyStatus, proxyLogs, csgServiceReporting, cstoreReporting, etlSIEM, etlSIEMCluster, reportingMetrics] = await Promise.allSettled([
       fetchReadyClusterTests(config),
       fetchSeleniumTests(config.selenium.portalUrl),
       fetchIntegrationTests(config),
       fetchSmokeTests(config),
-      fetchNewTestsAdded(config)
+      fetchNewTestsAdded(config),
+      fetchProxyStatus(config),
+      fetchProxyLogs(config),
+      fetchCSGServiceReporting(config),
+      fetchCSTOREReporting(config),
+      fetchETLSIEM(config),
+      fetchETLSIEMClusterTest(config),
+      fetchReportingMetrics(config)
     ]);
 
     // Process results
@@ -70,6 +86,48 @@ export async function aggregateDashboardData(config) {
       error('New Tests Added fetch failed:', newTests.reason);
     }
 
+    if (proxyStatus.status === 'fulfilled') {
+      results.sections.proxyStatus = aggregateSectionData('proxyStatus', proxyStatus.value);
+    } else {
+      error('Proxy Status fetch failed:', proxyStatus.reason);
+    }
+
+    if (proxyLogs.status === 'fulfilled') {
+      results.sections.proxyLogs = aggregateSectionData('proxyLogs', proxyLogs.value);
+    } else {
+      error('Proxy Logs fetch failed:', proxyLogs.reason);
+    }
+
+    if (csgServiceReporting.status === 'fulfilled') {
+      results.sections.csgServiceReporting = csgServiceReporting.value;
+    } else {
+      error('CSG Service Reporting fetch failed:', csgServiceReporting.reason);
+    }
+
+    if (cstoreReporting.status === 'fulfilled') {
+      results.sections.cstoreReporting = cstoreReporting.value;
+    } else {
+      error('CSTORE Reporting fetch failed:', cstoreReporting.reason);
+    }
+
+    if (etlSIEM.status === 'fulfilled') {
+      results.sections.etlSIEM = etlSIEM.value;
+    } else {
+      error('ETL SIEM fetch failed:', etlSIEM.reason);
+    }
+
+    if (etlSIEMCluster.status === 'fulfilled') {
+      results.sections.etlSIEMCluster = etlSIEMCluster.value;
+    } else {
+      error('ETL SIEM Cluster Test fetch failed:', etlSIEMCluster.reason);
+    }
+
+    if (reportingMetrics.status === 'fulfilled') {
+      results.sections.reportingMetrics = aggregateSectionData('reportingMetrics', reportingMetrics.value);
+    } else {
+      error('Reporting Metrics fetch failed:', reportingMetrics.reason);
+    }
+
     // Log warnings for high failure counts
     const totalFailed = Object.values(results.sections).reduce((sum, section) => {
       return sum + (section.failed || 0);
@@ -85,9 +143,9 @@ export async function aggregateDashboardData(config) {
     log(`[AI] Health Score: ${results.aiInsights.healthScore}, Pass Rate: ${results.aiInsights.passRate}%`);
     log(`[AI] Generated ${results.aiInsights.alerts.length} alerts and ${results.aiInsights.recommendations.length} recommendations`);
 
-  } catch (error) {
-    error('Fatal error aggregating dashboard data:', error.message);
-    results.lastError = error.message;
+  } catch (err) {
+    error('Fatal error aggregating dashboard data:', err.message);
+    results.lastError = err.message;
   } finally {
     results.refreshDurationMs = Date.now() - startTime;
     log(`Dashboard refresh completed in ${results.refreshDurationMs}ms`);

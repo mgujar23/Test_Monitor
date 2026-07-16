@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import Header from '../components/Header';
 import Section from '../components/Section';
+import SectionGroup from '../components/SectionGroup';
 import DetailsModal from '../components/DetailsModal';
 import { fetchDashboard, triggerManualRefresh, fetchTestDetails } from '../utils/api';
 
@@ -9,7 +10,44 @@ const SECTION_TITLES = {
   selenium: 'Selenium Tests',
   integrationTests: 'Integration Tests',
   smokeTests: 'Smoke Tests',
-  newTestsAdded: 'New Tests Added (Yearly)'
+  newTestsAdded: 'New Tests Added (Yearly)',
+  proxyStatus: 'Proxy Status',
+  proxyLogs: 'Proxy Logs',
+  csgServiceReporting: 'CSG Service Reporting',
+  cstoreReporting: 'CSTORE Reporting Test',
+  etlSIEM: 'ETL SIEM',
+  etlSIEMCluster: 'ETL SIEM Cluster Test',
+  reportingMetrics: 'Reporting Metrics'
+};
+
+const SECTION_GROUPS = {
+  portal: {
+    title: 'Portal',
+    sections: [
+      ['readyCluster', 'Ready Cluster Status'],
+      ['selenium', 'Selenium Tests'],
+      ['integrationTests', 'Integration Tests'],
+      ['smokeTests', 'Smoke Tests'],
+      ['newTestsAdded', 'New Tests Added (Yearly)']
+    ]
+  },
+  proxy: {
+    title: 'Proxy',
+    sections: [
+      ['proxyStatus', 'Proxy Status'],
+      ['proxyLogs', 'Proxy Logs']
+    ]
+  },
+  reporting: {
+    title: 'Reporting',
+    sections: [
+      ['csgServiceReporting', 'CSG Service Reporting'],
+      ['cstoreReporting', 'CSTORE Reporting Test'],
+      ['etlSIEM', 'ETL SIEM'],
+      ['etlSIEMCluster', 'ETL SIEM Cluster Test'],
+      ['reportingMetrics', 'Reporting Metrics']
+    ]
+  }
 };
 
 export default function Dashboard() {
@@ -99,13 +137,13 @@ export default function Dashboard() {
       )}
 
       <main className="max-w-7xl mx-auto p-6">
-        <div className="space-y-4">
-          {dashboardData && Object.entries(SECTION_TITLES).map(([key, title]) => (
-            <Section
-              key={key}
-              sectionKey={key}
-              title={title}
-              data={dashboardData.sections[key]}
+        <div className="space-y-6">
+          {dashboardData && Object.entries(SECTION_GROUPS).map(([groupKey, groupData]) => (
+            <SectionGroup
+              key={groupKey}
+              title={groupData.title}
+              sections={groupData.sections}
+              dashboardData={dashboardData}
               onClickMetric={handleClickMetric}
             />
           ))}

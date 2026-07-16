@@ -1,5 +1,37 @@
 import { execSync } from 'child_process';
+import { readFileSync } from 'fs';
+import { homedir } from 'os';
+import { join } from 'path';
 import { log, warn, error } from '../server/logger.js';
+
+
+function getP4Ticket(serverUrl, username) {
+  try {
+    const ticketFile = join(homedir(), '.p4tickets');
+    const ticketContent = readFileSync(ticketFile, 'utf-8');
+
+    // Format: server=user:ticket
+    // Example: perforce.cicd.cloud.fpdev.io:1666=minal.gujar:FDB3D1A0BF2BBF60D4AE27A83DCF0601
+    const lines = ticketContent.split('\n').filter(line => line.trim());
+
+    for (const line of lines) {
+      const [server, credentials] = line.split('=');
+      if (server === serverUrl && credentials) {
+        const [ticketUser, ticket] = credentials.split(':');
+        if (ticketUser === username && ticket) {
+          log('[P4] Found cached ticket in ~/.p4tickets');
+          return ticket;
+        }
+      }
+    }
+
+    warn('[P4] No cached ticket found for', `${serverUrl}/${username}`);
+    return null;
+  } catch (err) {
+    warn('[P4] Could not read ~/.p4tickets:', err.message);
+    return null;
+  }
+}
 
 export async function fetchNewTestsAdded(config) {
   try {
@@ -11,8 +43,23 @@ export async function fetchNewTestsAdded(config) {
 
     const serverUrl = p4Config.serverUrl;
     const username = p4Config.username;
-    const password = p4Config.apiToken || p4Config.password;
     const depotPath = p4Config.depotPath;
+
+    // Use P4 ticket cached in ~/.p4tickets (from 'p4 login')
+    log('[P4] Reading cached ticket from ~/.p4tickets');
+    const p4Ticket = getP4Ticket(serverUrl, username);
+
+    if (!p4Ticket) {
+      warn('[P4] No cached P4 ticket found. Please run: p4 login');
+      return getDefaultNewTestsData();
+    }
+
+    // Set P4 environment variables
+    process.env.P4PORT = serverUrl;
+    process.env.P4USER = username;
+    if (p4Ticket) {
+      process.env.P4PASSWD = p4Ticket;  // Use ticket as password
+    }
 
     log('[P4] Using p4 CLI to fetch changes from:', depotPath);
     log('[P4] Connecting to:', serverUrl, 'as user:', username);
@@ -22,12 +69,13 @@ export async function fetchNewTestsAdded(config) {
       log('[P4] Using cached P4 ticket for authentication');
 
       // Get changes from all years - fetch more history (1000 changes covers ~2-3 years of activity)
-      const changesCmd = `p4 -p ${serverUrl} -u ${username} changes -m 1000 "${depotPath}/..."`;
+      // P4PORT and P4USER are already set in process.env
+      const changesCmd = `p4 changes -m 1000 "${depotPath}/..."`;
       log('[P4] Running command: p4 changes...');
 
       const changesOutput = execSync(changesCmd, {
         encoding: 'utf-8',
-        env: { ...process.env, P4PORT: serverUrl, P4USER: username }
+        env: process.env
       });
 
       const changeLines = changesOutput.trim().split('\n').filter(line => line.length > 0);
