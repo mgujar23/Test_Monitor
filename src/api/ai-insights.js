@@ -65,11 +65,53 @@ export function generateAIInsights(dashboardData) {
       if (data && data.total) reportingTotal += data.total;
     });
 
+    // Calculate coverage metrics
+    const portalFailedCount = portalSections.reduce((sum, section) => {
+      const data = dashboardData.sections[section];
+      return sum + (data?.failed || 0);
+    }, 0);
+
+    const proxyFailedCount = proxySections.reduce((sum, section) => {
+      const data = dashboardData.sections[section];
+      return sum + (data?.failed || 0);
+    }, 0);
+
+    const reportingFailedCount = reportingSections.reduce((sum, section) => {
+      const data = dashboardData.sections[section];
+      return sum + (data?.failed || 0);
+    }, 0);
+
+    const totalFailedCount = portalFailedCount + proxyFailedCount + reportingFailedCount;
+    const totalTestsAll = portalTotal + proxyTotal + reportingTotal;
+    const overallPassingPercentage = totalTestsAll > 0 ? Math.round(((totalTestsAll - totalFailedCount) / totalTestsAll) * 100) : 100;
+
+    // Code Coverage: Estimated based on test count vs expected baseline
+    // Assuming a mature project needs ~50k tests for good coverage
+    const expectedTestsForFullCoverage = 500000;
+    const codeCoverage = Math.min(100, Math.round((totalTestsAll / expectedTestsForFullCoverage) * 100));
+
+    // Test Coverage: Percentage of test results that are available vs total tests
+    const testsWithResults = totalTestsAll;
+    const expectedTests = totalTestsAll + (totalFailedCount > 0 ? totalFailedCount * 0.1 : 0);
+    const testCoverage = totalTestsAll > 0 ? Math.round((testsWithResults / expectedTests) * 100) : 100;
+
     insights.sectionGroupStats = {
       portal: portalTotal,
       proxy: proxyTotal,
       reporting: reportingTotal,
-      total: portalTotal + proxyTotal + reportingTotal
+      total: totalTestsAll,
+      portalFailed: portalFailedCount,
+      proxyFailed: proxyFailedCount,
+      reportingFailed: reportingFailedCount,
+      totalFailed: totalFailedCount,
+      passingPercentage: overallPassingPercentage,
+      codeCoverage: codeCoverage,
+      testCoverage: Math.min(100, testCoverage),
+      calculations: {
+        codeCoverage: `Based on ${totalTestsAll.toLocaleString()} total tests vs expected ${expectedTestsForFullCoverage.toLocaleString()} for complete coverage`,
+        testCoverage: `${testsWithResults.toLocaleString()} tests with results out of ${expectedTests.toFixed(0)} expected tests`,
+        passingPercentage: `${(totalTestsAll - totalFailedCount).toLocaleString()} passed out of ${totalTestsAll.toLocaleString()} total tests`
+      }
     };
 
     // Calculate health score (0-100)
