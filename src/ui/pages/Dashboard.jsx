@@ -11,8 +11,7 @@ const SECTION_TITLES = {
   integrationTests: 'Integration Tests',
   smokeTests: 'Smoke Tests',
   newTestsAdded: 'New Tests Added (Yearly)',
-  proxyStatus: 'Proxy Status',
-  proxyLogs: 'Proxy Logs',
+  prxAutoTest: 'PRX Auto Test',
   csgServiceReporting: 'CSG Service Reporting',
   cstoreReporting: 'CSTORE Reporting Test',
   etlSIEM: 'ETL SIEM',
@@ -34,8 +33,7 @@ const SECTION_GROUPS = {
   proxy: {
     title: 'Proxy',
     sections: [
-      ['proxyStatus', 'Proxy Status'],
-      ['proxyLogs', 'Proxy Logs']
+      ['prxAutoTest', 'PRX Auto Test']
     ]
   },
   reporting: {

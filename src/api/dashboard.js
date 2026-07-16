@@ -2,8 +2,7 @@ import { log, warn, error } from '../server/logger.js';
 import { fetchReadyClusterTests, fetchIntegrationTests, fetchSmokeTests } from './jenkins.js';
 import { fetchSeleniumTests } from './selenium.js';
 import { fetchNewTestsAdded } from './perforce.js';
-import { fetchProxyStatus, fetchProxyLogs } from './proxy.js';
-import { fetchCSGServiceReporting, fetchCSTOREReporting, fetchETLSIEM, fetchETLSIEMClusterTest, fetchReportingMetrics } from './reporting.js';
+import { fetchCSGServiceReporting, fetchCSTOREReporting, fetchETLSIEM, fetchETLSIEMClusterTest, fetchReportingMetrics, fetchPRXAutoTest } from './reporting.js';
 import { aggregateSectionData, formatTimestamp, loadFixesFile } from './utils.js';
 import { generateAIInsights } from './ai-insights.js';
 
@@ -19,13 +18,12 @@ export async function aggregateDashboardData(config) {
       integrationTests: { total: 0, failed: 0, stale: 0, areas: [] },
       smokeTests: { total: 0, failed: 0, stale: 0, areas: [] },
       newTestsAdded: { yearly: [] },
-      proxyStatus: { total: 0, failed: 0, stale: 0, areas: [] },
-      proxyLogs: { total: 0, failed: 0, stale: 0, areas: [] },
       csgServiceReporting: {},
       cstoreReporting: {},
       etlSIEM: {},
       etlSIEMCluster: {},
-      reportingMetrics: { total: 0, failed: 0, stale: 0, areas: [] }
+      reportingMetrics: { total: 0, failed: 0, stale: 0, areas: [] },
+      prxAutoTest: {}
     },
     aiInsights: {
       healthScore: 0,
@@ -40,19 +38,18 @@ export async function aggregateDashboardData(config) {
 
   try {
     // Fetch from all sources in parallel
-    const [readyCluster, selenium, integration, smoke, newTests, proxyStatus, proxyLogs, csgServiceReporting, cstoreReporting, etlSIEM, etlSIEMCluster, reportingMetrics] = await Promise.allSettled([
+    const [readyCluster, selenium, integration, smoke, newTests, csgServiceReporting, cstoreReporting, etlSIEM, etlSIEMCluster, reportingMetrics, prxAutoTest] = await Promise.allSettled([
       fetchReadyClusterTests(config),
       fetchSeleniumTests(config.selenium.portalUrl),
       fetchIntegrationTests(config),
       fetchSmokeTests(config),
       fetchNewTestsAdded(config),
-      fetchProxyStatus(config),
-      fetchProxyLogs(config),
       fetchCSGServiceReporting(config),
       fetchCSTOREReporting(config),
       fetchETLSIEM(config),
       fetchETLSIEMClusterTest(config),
-      fetchReportingMetrics(config)
+      fetchReportingMetrics(config),
+      fetchPRXAutoTest(config)
     ]);
 
     // Process results
@@ -86,18 +83,6 @@ export async function aggregateDashboardData(config) {
       error('New Tests Added fetch failed:', newTests.reason);
     }
 
-    if (proxyStatus.status === 'fulfilled') {
-      results.sections.proxyStatus = aggregateSectionData('proxyStatus', proxyStatus.value);
-    } else {
-      error('Proxy Status fetch failed:', proxyStatus.reason);
-    }
-
-    if (proxyLogs.status === 'fulfilled') {
-      results.sections.proxyLogs = aggregateSectionData('proxyLogs', proxyLogs.value);
-    } else {
-      error('Proxy Logs fetch failed:', proxyLogs.reason);
-    }
-
     if (csgServiceReporting.status === 'fulfilled') {
       results.sections.csgServiceReporting = csgServiceReporting.value;
     } else {
@@ -126,6 +111,12 @@ export async function aggregateDashboardData(config) {
       results.sections.reportingMetrics = aggregateSectionData('reportingMetrics', reportingMetrics.value);
     } else {
       error('Reporting Metrics fetch failed:', reportingMetrics.reason);
+    }
+
+    if (prxAutoTest.status === 'fulfilled') {
+      results.sections.prxAutoTest = prxAutoTest.value;
+    } else {
+      error('PRX Auto Test fetch failed:', prxAutoTest.reason);
     }
 
     // Log warnings for high failure counts

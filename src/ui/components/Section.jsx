@@ -807,7 +807,7 @@ export default function Section({ title, data, sectionKey, onClickMetric }) {
   }
 
   // ========== REPORTING STATISTICS TABLE SECTIONS WITH AREAS ==========
-  if (['csgServiceReporting', 'cstoreReporting', 'etlSIEM', 'etlSIEMCluster'].includes(sectionKey) && data?.buildNumber) {
+  if (['csgServiceReporting', 'cstoreReporting', 'etlSIEM', 'etlSIEMCluster', 'prxAutoTest'].includes(sectionKey) && data?.buildNumber) {
     const passed = (data.total || 0) - (data.failed || 0);
     const passingPercentage = data.total > 0 ? ((passed / data.total) * 100).toFixed(2) : '0.00';
 
@@ -899,6 +899,18 @@ export default function Section({ title, data, sectionKey, onClickMetric }) {
             <div className="flex justify-end mb-4">
               <a
                 href="https://jenkins.infra-dev.forcepoint.net/job/Projects/job/Test/job/ETLSIEMTest/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-400 hover:text-blue-300 text-xs underline"
+              >
+                Click here for more details →
+              </a>
+            </div>
+          )}
+          {sectionKey === 'prxAutoTest' && (
+            <div className="flex justify-end mb-4">
+              <a
+                href="https://jenkins.infra-dev.forcepoint.net/job/Projects/job/Test/job/PrxAutotests/"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-blue-400 hover:text-blue-300 text-xs underline"
