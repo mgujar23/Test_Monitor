@@ -16,7 +16,8 @@ export function generateAIInsights(dashboardData) {
       riskAssessment: [],
       estimatedFixTime: 0,
       performanceMetrics: [],
-      improvementMilestones: { current: 0, target: 95, progress: 0 }
+      improvementMilestones: { current: 0, target: 95, progress: 0 },
+      sectionGroupStats: { portal: 0, proxy: 0, reporting: 0 }
     };
 
     // Calculate overall health metrics
@@ -40,6 +41,36 @@ export function generateAIInsights(dashboardData) {
 
     // Calculate overall pass rate
     insights.passRate = totalTests > 0 ? Math.round(((totalTests - totalFailed) / totalTests) * 100) : 100;
+
+    // Calculate section group test statistics
+    const portalSections = ['readyCluster', 'selenium', 'integrationTests', 'smokeTests'];
+    const proxySections = ['prxAutoTest'];
+    const reportingSections = ['csgServiceReporting', 'cstoreReporting', 'etlSIEM', 'etlSIEMCluster'];
+
+    let portalTotal = 0;
+    portalSections.forEach(section => {
+      const data = dashboardData.sections[section];
+      if (data && data.total) portalTotal += data.total;
+    });
+
+    let proxyTotal = 0;
+    proxySections.forEach(section => {
+      const data = dashboardData.sections[section];
+      if (data && data.total) proxyTotal += data.total;
+    });
+
+    let reportingTotal = 0;
+    reportingSections.forEach(section => {
+      const data = dashboardData.sections[section];
+      if (data && data.total) reportingTotal += data.total;
+    });
+
+    insights.sectionGroupStats = {
+      portal: portalTotal,
+      proxy: proxyTotal,
+      reporting: reportingTotal,
+      total: portalTotal + proxyTotal + reportingTotal
+    };
 
     // Calculate health score (0-100)
     insights.healthScore = calculateHealthScore(sectionMetrics);

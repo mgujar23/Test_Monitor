@@ -126,6 +126,7 @@ export default function Dashboard() {
         onRefresh={handleRefresh}
         isLoading={loading || refreshing}
         refreshing={refreshing}
+        sectionGroupStats={dashboardData?.aiInsights?.sectionGroupStats}
       />
 
       {error && (
