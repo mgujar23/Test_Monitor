@@ -90,21 +90,19 @@ export default function Section({ title, data, sectionKey, onClickMetric }) {
                         <table className="w-full text-xs text-gray-300">
                           <thead className="bg-dark-card border-b border-dark-border sticky top-0">
                             <tr>
-                              <th className="text-left px-3 py-2 min-w-[70px]">Build #</th>
-                              <th className="text-left px-3 py-2 min-w-[80px]">Date</th>
-                              <th className="text-left px-3 py-2 min-w-[70px]">Ticket #</th>
-                              <th className="text-left px-3 py-2 min-w-[200px]">Details</th>
+                              <th className="text-left px-3 py-2 min-w-[80px]">Change #</th>
+                              <th className="text-left px-3 py-2 min-w-[90px]">Date</th>
                               <th className="text-left px-3 py-2 min-w-[120px]">Author</th>
+                              <th className="text-left px-3 py-2 min-w-[280px]">Description</th>
                             </tr>
                           </thead>
                           <tbody>
                             {data.changes.map((change, idx) => (
                               <tr key={idx} className="border-b border-dark-border hover:bg-dark-border/30">
-                                <td className="px-3 py-2 text-gray-300 font-semibold">{change.buildNum || '-'}</td>
+                                <td className="px-3 py-2 text-blue-400 font-semibold">{change.changeNum || '-'}</td>
                                 <td className="px-3 py-2 text-gray-400">{change.date || '-'}</td>
-                                <td className="px-3 py-2 text-blue-400">{change.ticketNum || '-'}</td>
-                                <td className="px-3 py-2 truncate text-gray-400">{change.details || '-'}</td>
                                 <td className="px-3 py-2 text-green-300 font-semibold">{change.author || '-'}</td>
+                                <td className="px-3 py-2 truncate text-gray-400">{change.description || '(no description)'}</td>
                               </tr>
                             ))}
                           </tbody>

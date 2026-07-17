@@ -1,7 +1,7 @@
 import { log, warn, error } from '../server/logger.js';
 import { fetchReadyClusterTests, fetchIntegrationTests, fetchSmokeTests } from './jenkins.js';
 import { fetchSeleniumTests } from './selenium.js';
-import { fetchNewTestsAdded } from './perforce.js';
+import { fetchNewTestsAdded, fetchRecentChanges } from './perforce.js';
 import { fetchCSGServiceReporting, fetchCSTOREReporting, fetchETLSIEM, fetchETLSIEMClusterTest, fetchReportingMetrics, fetchPRXAutoTest } from './reporting.js';
 import { aggregateSectionData, formatTimestamp, loadFixesFile } from './utils.js';
 import { generateAIInsights } from './ai-insights.js';
@@ -38,7 +38,7 @@ export async function aggregateDashboardData(config) {
 
   try {
     // Fetch from all sources in parallel
-    const [readyCluster, selenium, integration, smoke, newTests, csgServiceReporting, cstoreReporting, etlSIEM, etlSIEMCluster, reportingMetrics, prxAutoTest] = await Promise.allSettled([
+    const [readyCluster, selenium, integration, smoke, newTests, csgServiceReporting, cstoreReporting, etlSIEM, etlSIEMCluster, reportingMetrics, prxAutoTest, recentChanges] = await Promise.allSettled([
       fetchReadyClusterTests(config),
       fetchSeleniumTests(config.selenium.portalUrl),
       fetchIntegrationTests(config),
@@ -49,12 +49,21 @@ export async function aggregateDashboardData(config) {
       fetchETLSIEM(config),
       fetchETLSIEMClusterTest(config),
       fetchReportingMetrics(config),
-      fetchPRXAutoTest(config)
+      fetchPRXAutoTest(config),
+      fetchRecentChanges(config)
     ]);
 
     // Process results
     if (readyCluster.status === 'fulfilled') {
       results.sections.readyCluster = aggregateSectionData('readyCluster', readyCluster.value);
+      // Add recent changes to readyCluster section
+      if (recentChanges.status === 'fulfilled') {
+        log('[Dashboard] Recent changes status:', recentChanges.value?.changes?.length || 0, 'changes');
+        results.sections.readyCluster.changes = recentChanges.value?.changes || [];
+      } else {
+        log('[Dashboard] Recent changes failed:', recentChanges.reason);
+        results.sections.readyCluster.changes = [];
+      }
     } else {
       error('Ready Cluster fetch failed:', readyCluster.reason);
     }

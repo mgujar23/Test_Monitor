@@ -11,25 +11,110 @@ function getP4Ticket(serverUrl, username) {
     const ticketContent = readFileSync(ticketFile, 'utf-8');
 
     // Format: server=user:ticket
-    // Example: perforce.cicd.cloud.fpdev.io:1666=minal.gujar:FDB3D1A0BF2BBF60D4AE27A83DCF0601
     const lines = ticketContent.split('\n').filter(line => line.trim());
 
+    // Try exact match first
     for (const line of lines) {
       const [server, credentials] = line.split('=');
       if (server === serverUrl && credentials) {
         const [ticketUser, ticket] = credentials.split(':');
         if (ticketUser === username && ticket) {
-          log('[P4] Found cached ticket in ~/.p4tickets');
+          log('[P4] Found cached ticket for', serverUrl);
           return ticket;
         }
       }
     }
 
-    warn('[P4] No cached ticket found for', `${serverUrl}/${username}`);
+    // If no exact match, try to find any ticket for this username (server might be proxy/alias)
+    for (const line of lines) {
+      const [server, credentials] = line.split('=');
+      if (credentials) {
+        const [ticketUser, ticket] = credentials.split(':');
+        if (ticketUser === username && ticket) {
+          log('[P4] Found cached ticket for user', username, '(server:', server, ')');
+          return ticket;
+        }
+      }
+    }
+
+    warn('[P4] No cached ticket found for user', username);
     return null;
   } catch (err) {
     warn('[P4] Could not read ~/.p4tickets:', err.message);
     return null;
+  }
+}
+
+export async function fetchRecentChanges(config) {
+  try {
+    log('[P4-Changes] Starting recent changes fetch');
+    const p4Config = config.perforce;
+    if (!p4Config || !p4Config.serverUrl) {
+      log('[P4-Changes] No Perforce config');
+      return { changes: [] };
+    }
+
+    const serverUrl = p4Config.serverUrl;
+    const username = p4Config.username;
+    const depotPath = '//code_SaaS/csg_service/';
+
+    log('[P4-Changes] Fetching from:', depotPath);
+    const p4Ticket = getP4Ticket(serverUrl, username);
+
+    if (!p4Ticket) {
+      warn('[P4-Changes] No P4 ticket found');
+      return { changes: [] };
+    }
+
+    log('[P4-Changes] Got P4 ticket, executing p4 changes');
+    process.env.P4PORT = serverUrl;
+    process.env.P4USER = username;
+    process.env.P4PASSWD = p4Ticket;
+
+    try {
+      const changesCmd = `p4 changes -m 10 "${depotPath}..."`;
+      log('[P4-Changes] Running:', changesCmd);
+      const changesOutput = execSync(changesCmd, {
+        encoding: 'utf-8',
+        env: process.env,
+        timeout: 10000  // 10 second timeout
+      });
+
+      const changeLines = changesOutput.trim().split('\n').filter(line => line.length > 0);
+      log('[P4-Changes] Found', changeLines.length, 'total lines');
+
+      const changes = [];
+      for (const changeLine of changeLines) {
+        try {
+          // Format: Change 12345 on 2026/07/17 by user@host 'description'
+          const match = changeLine.match(/Change\s+(\d+)\s+on\s+(\d{4}\/\d{2}\/\d{2})\s+by\s+([^\s]+)\s+'([^']*)/);
+          if (!match) {
+            log('[P4-Changes] No match for line:', changeLine.substring(0, 80));
+            continue;
+          }
+
+          const changeNum = match[1];
+          const changeDate = match[2];
+          const author = match[3];
+          const description = match[4] || '';
+
+          changes.push({ changeNum, date: changeDate, author, description });
+        } catch (e) {
+          warn('[P4-Changes] Parse error:', e.message);
+        }
+      }
+
+      log('[P4-Changes] Returning', changes.length, 'parsed changes');
+      return { changes };
+
+    } catch (err) {
+      error('[P4-Changes] p4 error:', err.message);
+      return { changes: [] };
+    }
+
+  } catch (err) {
+    error('[P4-Changes] Fatal error:', err.message);
+    return { changes: [] };
   }
 }
 
