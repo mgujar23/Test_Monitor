@@ -20,94 +20,99 @@ export default function Header({ lastUpdateTime, onRefresh, isLoading, sectionGr
 
   return (
     <>
-      <header className="bg-dark-card border-b border-dark-border p-6">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div>
-            <h1 className="text-4xl font-bold text-white mb-1">Cloud Web - Test Monitor</h1>
-            <p className="text-sm text-gray-400">
-              Last updated: {formatTimestamp(lastUpdateTime)}
-            </p>
-          </div>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => navigate('/insights')}
-              className="px-4 py-2 rounded-lg font-semibold transition-colors bg-purple-600 hover:bg-purple-700 text-white cursor-pointer"
-            >
-              🤖 AI Insights
-            </button>
-            <button
-              onClick={handleRefresh}
-              disabled={isLoading || isRefreshing}
-              className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
-                isLoading || isRefreshing
-                  ? 'bg-gray-600 text-gray-300 cursor-not-allowed'
-                  : 'bg-blue-600 hover:bg-blue-700 text-white cursor-pointer'
-              }`}
-            >
-              {isRefreshing ? 'Refreshing...' : 'Refresh Now'}
-            </button>
+      <header className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 border-b border-slate-700/50 shadow-lg">
+        <div className="max-w-7xl mx-auto px-6 py-8">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-2 h-8 bg-gradient-to-b from-blue-500 to-blue-600 rounded"></div>
+                <h1 className="text-5xl font-bold text-white tracking-tight">Test Monitor</h1>
+              </div>
+              <p className="text-sm text-slate-400">
+                ⏱️ Last updated: {formatTimestamp(lastUpdateTime)}
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => navigate('/insights')}
+                className="px-6 py-2.5 rounded-lg font-semibold transition-all duration-200 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-500 hover:to-purple-600 text-white cursor-pointer shadow-lg hover:shadow-xl hover:scale-105 active:scale-95"
+              >
+                🤖 AI Insights
+              </button>
+              <button
+                onClick={handleRefresh}
+                disabled={isLoading || isRefreshing}
+                className={`px-6 py-2.5 rounded-lg font-semibold transition-all duration-200 ${
+                  isLoading || isRefreshing
+                    ? 'bg-slate-700 text-slate-400 cursor-not-allowed'
+                    : 'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white cursor-pointer shadow-lg hover:shadow-xl hover:scale-105 active:scale-95'
+                }`}
+              >
+                {isRefreshing ? '⟳ Refreshing...' : '🔄 Refresh Now'}
+              </button>
+            </div>
           </div>
         </div>
       </header>
 
       {/* Test Statistics by Section Group */}
       {sectionGroupStats && (
-        <div className="bg-dark-bg border-b border-dark-border/50 px-6 py-4">
+        <div className="bg-gradient-to-b from-slate-800 to-slate-900 border-b border-slate-700/50 px-6 py-6">
           <div className="max-w-7xl mx-auto">
-            <h3 className="text-sm font-semibold text-gray-300 mb-3">Test Summary by Section</h3>
-            <div className="grid grid-cols-4 gap-4 mb-4">
-              <div className="bg-dark-card border border-dark-border rounded p-3">
-                <div className="text-gray-400 text-xs font-medium mb-1">Portal</div>
-                <div className="text-2xl font-bold text-blue-400">{(sectionGroupStats.portal || 0).toLocaleString()}</div>
-                <div className="text-gray-500 text-xs mt-1">tests</div>
+            <h3 className="text-sm font-bold text-slate-300 mb-4 uppercase tracking-wider">📊 Test Summary</h3>
+            <div className="grid grid-cols-4 gap-4 mb-6">
+              <div className="bg-gradient-to-br from-slate-700 to-slate-800 border border-slate-600/50 rounded-lg p-4 hover:border-blue-500/50 transition-all shadow-md hover:shadow-lg">
+                <div className="text-slate-400 text-xs font-semibold mb-2 uppercase tracking-wide">Portal</div>
+                <div className="text-3xl font-bold text-blue-400">{(sectionGroupStats.portal || 0).toLocaleString()}</div>
+                <div className="text-slate-500 text-xs mt-2 font-medium">tests</div>
               </div>
-              <div className="bg-dark-card border border-dark-border rounded p-3">
-                <div className="text-gray-400 text-xs font-medium mb-1">Proxy</div>
-                <div className="text-2xl font-bold text-green-400">{(sectionGroupStats.proxy || 0).toLocaleString()}</div>
-                <div className="text-gray-500 text-xs mt-1">tests</div>
+              <div className="bg-gradient-to-br from-slate-700 to-slate-800 border border-slate-600/50 rounded-lg p-4 hover:border-green-500/50 transition-all shadow-md hover:shadow-lg">
+                <div className="text-slate-400 text-xs font-semibold mb-2 uppercase tracking-wide">Proxy</div>
+                <div className="text-3xl font-bold text-green-400">{(sectionGroupStats.proxy || 0).toLocaleString()}</div>
+                <div className="text-slate-500 text-xs mt-2 font-medium">tests</div>
               </div>
-              <div className="bg-dark-card border border-dark-border rounded p-3">
-                <div className="text-gray-400 text-xs font-medium mb-1">Reporting</div>
-                <div className="text-2xl font-bold text-orange-400">{(sectionGroupStats.reporting || 0).toLocaleString()}</div>
-                <div className="text-gray-500 text-xs mt-1">tests</div>
+              <div className="bg-gradient-to-br from-slate-700 to-slate-800 border border-slate-600/50 rounded-lg p-4 hover:border-orange-500/50 transition-all shadow-md hover:shadow-lg">
+                <div className="text-slate-400 text-xs font-semibold mb-2 uppercase tracking-wide">Reporting</div>
+                <div className="text-3xl font-bold text-orange-400">{(sectionGroupStats.reporting || 0).toLocaleString()}</div>
+                <div className="text-slate-500 text-xs mt-2 font-medium">tests</div>
               </div>
-              <div className="bg-dark-card border border-dark-border rounded p-3 bg-blue-900/20">
-                <div className="text-gray-400 text-xs font-medium mb-1">Total</div>
-                <div className="text-2xl font-bold text-white">{(sectionGroupStats.total || 0).toLocaleString()}</div>
-                <div className="text-gray-500 text-xs mt-1">tests</div>
+              <div className="bg-gradient-to-br from-blue-700/40 to-blue-800/40 border border-blue-600/50 rounded-lg p-4 hover:border-blue-400/50 transition-all shadow-md hover:shadow-lg ring-1 ring-blue-500/20">
+                <div className="text-blue-300 text-xs font-semibold mb-2 uppercase tracking-wide">Total</div>
+                <div className="text-3xl font-bold text-blue-200">{(sectionGroupStats.total || 0).toLocaleString()}</div>
+                <div className="text-blue-400 text-xs mt-2 font-medium">tests</div>
               </div>
             </div>
 
-            <h3 className="text-sm font-semibold text-gray-300 mb-3">Coverage & Quality Metrics</h3>
+            <h3 className="text-sm font-bold text-slate-300 mb-4 uppercase tracking-wider">🎯 Coverage & Quality Metrics</h3>
             <div className="grid grid-cols-3 gap-4">
               <button
                 onClick={() => setSelectedMetric('codeCoverage')}
-                className="bg-dark-card border border-dark-border rounded p-4 cursor-pointer hover:border-blue-500 transition-colors text-left"
+                className="bg-gradient-to-br from-slate-700 to-slate-800 border border-slate-600/50 rounded-lg p-4 cursor-pointer hover:border-blue-500/50 transition-all shadow-md hover:shadow-lg text-left group"
               >
-                <div className="text-gray-400 text-xs font-medium mb-2">Code Coverage</div>
+                <div className="text-slate-400 text-xs font-semibold mb-3 uppercase tracking-wide">Code Coverage</div>
                 <div className="flex items-end gap-2">
-                  <div className="text-3xl font-bold text-blue-400">{sectionGroupStats.codeCoverage || 0}%</div>
-                  <div className="text-gray-500 text-xs mb-1">Click for details</div>
+                  <div className="text-4xl font-bold text-blue-400">{sectionGroupStats.codeCoverage || 0}%</div>
+                  <div className="text-slate-500 text-xs mb-1 group-hover:text-slate-300 transition-colors">Details →</div>
                 </div>
               </button>
               <button
                 onClick={() => setSelectedMetric('testCoverage')}
-                className="bg-dark-card border border-dark-border rounded p-4 cursor-pointer hover:border-green-500 transition-colors text-left"
+                className="bg-gradient-to-br from-slate-700 to-slate-800 border border-slate-600/50 rounded-lg p-4 cursor-pointer hover:border-green-500/50 transition-all shadow-md hover:shadow-lg text-left group"
               >
-                <div className="text-gray-400 text-xs font-medium mb-2">Test Coverage</div>
+                <div className="text-slate-400 text-xs font-semibold mb-3 uppercase tracking-wide">Test Coverage</div>
                 <div className="flex items-end gap-2">
-                  <div className="text-3xl font-bold text-green-400">{sectionGroupStats.testCoverage || 0}%</div>
-                  <div className="text-gray-500 text-xs mb-1">Click for details</div>
+                  <div className="text-4xl font-bold text-green-400">{sectionGroupStats.testCoverage || 0}%</div>
+                  <div className="text-slate-500 text-xs mb-1 group-hover:text-slate-300 transition-colors">Details →</div>
                 </div>
               </button>
               <button
                 onClick={() => setSelectedMetric('passingPercentage')}
-                className="bg-dark-card border border-dark-border rounded p-4 cursor-pointer hover:border-green-500 transition-colors text-left"
+                className="bg-gradient-to-br from-emerald-700/40 to-emerald-800/40 border border-emerald-600/50 rounded-lg p-4 cursor-pointer hover:border-emerald-400/50 transition-all shadow-md hover:shadow-lg text-left group ring-1 ring-emerald-500/20"
               >
-                <div className="text-gray-400 text-xs font-medium mb-2">Passing Percentage</div>
+                <div className="text-emerald-300 text-xs font-semibold mb-3 uppercase tracking-wide">Passing %</div>
                 <div className="flex items-end gap-2">
-                  <div className="text-3xl font-bold text-green-400">{sectionGroupStats.passingPercentage || 0}%</div>
-                  <div className="text-gray-500 text-xs mb-1">Click for details</div>
+                  <div className="text-4xl font-bold text-emerald-300">{sectionGroupStats.passingPercentage || 0}%</div>
+                  <div className="text-emerald-400 text-xs mb-1 group-hover:text-emerald-200 transition-colors">Details →</div>
                 </div>
               </button>
             </div>
