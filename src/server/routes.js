@@ -3,6 +3,7 @@ import { loadCache } from './cache.js';
 import { getTestDetails } from '../api/test-details.js';
 import { getHealthStatus, performRefresh } from './jobs.js';
 import { generateMockDashboardData } from './mock-data.js';
+import { getCoverageMetrics } from '../api/coverage.js';
 
 export default function routes(config) {
   const router = express.Router();
@@ -141,6 +142,26 @@ export default function routes(config) {
       console.error('[Routes] Error triggering refresh:', error);
       res.status(500).json({
         error: 'Failed to trigger refresh',
+        message: error.message
+      });
+    }
+  });
+
+  // Coverage metrics endpoint
+  router.get('/coverage-metrics', async (req, res) => {
+    try {
+      const metrics = await getCoverageMetrics(config);
+      if (!metrics) {
+        return res.status(503).json({
+          error: 'Coverage metrics not available',
+          message: 'Unable to calculate coverage metrics at this time'
+        });
+      }
+      res.json(metrics);
+    } catch (error) {
+      console.error('[Routes] Error fetching coverage metrics:', error);
+      res.status(500).json({
+        error: 'Failed to fetch coverage metrics',
         message: error.message
       });
     }

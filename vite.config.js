@@ -2,9 +2,17 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
 export default defineConfig({
+  base: '/test-monitor/',
   plugins: [react()],
-  server: {
+  preview: {
+    host: '0.0.0.0',
     port: 5173,
+    allowedHosts: ['test-monitor.infra-dev.forcepoint.net', 'localhost']
+  },
+  server: {
+    host: '0.0.0.0',
+    port: 5173,
+    allowedHosts: ['test-monitor.infra-dev.forcepoint.net', 'localhost'],
     hmr: {
       host: 'localhost',
       port: 5173,

@@ -1,4 +1,5 @@
-const API_BASE = '/api';
+// Auto-detect API base path based on environment
+const API_BASE = window.location.hostname === 'localhost' ? '/api' : '/test-monitor/api';
 
 export async function fetchDashboard() {
   const response = await fetch(`${API_BASE}/dashboard`);
