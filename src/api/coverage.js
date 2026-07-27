@@ -234,7 +234,6 @@ export async function getCoverageMetrics(config, testData = null) {
 
     log('[Coverage] Coverage % - Portal:', portalCoveragePercent + '%', 'Reporting:', reportingCoveragePercent + '%', 'Proxy:', proxyCoveragePercent + '%', 'Total:', totalCoveragePercent + '%');
 
-    const totalCovered = portalCovered + reportingCovered + proxyCovered;
     const overallCoveragePercent = Math.min(Math.round((totalCovered / totalLoC) * 100), 100);
 
     log('[Coverage] Total SLOC:', totalLoC, 'Covered:', totalCovered, 'Coverage:', overallCoveragePercent + '%');
