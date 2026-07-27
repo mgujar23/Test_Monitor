@@ -1,5 +1,49 @@
 import { execSync } from 'child_process';
 import { log, warn, error } from '../server/logger.js';
+import fs from 'fs';
+import path from 'path';
+
+/**
+ * Calculate SLOC by counting code lines in files (fallback when cloc unavailable)
+ */
+function countLinesInFiles(dirPath) {
+  try {
+    let totalLines = 0;
+    let fileCount = 0;
+    const extensions = ['.js', '.py', '.java', '.pl', '.sql', '.ts', '.tsx', '.jsx', '.go', '.rb', '.php'];
+
+    function walkDir(dir) {
+      try {
+        const files = fs.readdirSync(dir);
+        for (const file of files) {
+          if (['.git', 'node_modules', '.venv', '__pycache__', 'vendor'].includes(file)) continue;
+
+          const filePath = path.join(dir, file);
+          const stat = fs.statSync(filePath);
+
+          if (stat.isDirectory()) {
+            walkDir(filePath);
+          } else if (extensions.some(ext => file.endsWith(ext))) {
+            try {
+              const content = fs.readFileSync(filePath, 'utf-8');
+              totalLines += content.split('\n').length;
+              fileCount++;
+            } catch (e) {
+              // Skip unreadable files
+            }
+          }
+        }
+      } catch (e) {
+        // Directory access error
+      }
+    }
+
+    walkDir(dirPath);
+    return { loC: totalLines, files: fileCount };
+  } catch (err) {
+    return null;
+  }
+}
 
 /**
  * Calculate SLOC using cloc for any path (local, git URL, or P4 depot)
@@ -9,7 +53,7 @@ function calculateSLOC(path, isGitUrl = false, isP4 = false) {
     let clocCmd = '';
 
     if (isGitUrl) {
-      // For GitHub URLs, cloc can clone and count
+      // For GitHub URLs, try to clone and count
       clocCmd = `cloc "${path}" --json --exclude-dir=node_modules,vendor,third-party,.git 2>/dev/null`;
     } else if (isP4) {
       // For P4 paths, cloc can work with depot paths
@@ -58,28 +102,15 @@ async function getPerforceLoC(config) {
         loC: clocData.SUM.code || 0,
         comments: clocData.SUM.comment || 0,
         blank: clocData.SUM.blank || 0,
-        note: 'Logical SLOC measured'
+        note: 'Logical SLOC measured from Perforce'
       };
     } else {
-      // Fallback to baseline
-      warn('[Coverage] P4 cloc failed, using baseline');
-      return {
-        source: 'Perforce',
-        path: depotPath,
-        files: 8289,
-        loC: 1018000, // ~65% of 1.5M physical lines
-        note: 'Baseline SLOC (cloc failed)'
-      };
+      error('[Coverage] Failed to calculate P4 SLOC - cloc error or network issue');
+      throw new Error('Cannot calculate Perforce SLOC: cloc failed. Ensure P4 CLI is configured and network accessible.');
     }
   } catch (err) {
     error('[Coverage] Error getting P4 LOC:', err.message);
-    return {
-      source: 'Perforce',
-      path: '//code_SaaS/csg_service/',
-      files: 8289,
-      loC: 1018000,
-      note: 'Fallback baseline'
-    };
+    throw err;
   }
 }
 
@@ -141,30 +172,16 @@ async function getRepoLoC(repoUrl, repoName) {
         files: clocData.SUM.nFiles || 0,
         loC: clocData.SUM.code || 0,
         comments: clocData.SUM.comment || 0,
-        blank: clocData.SUM.blank || 0
+        blank: clocData.SUM.blank || 0,
+        note: 'Measured'
       };
     } else {
-      warn('[Coverage]', repoName, 'cloc failed, using estimate');
-      // Estimate based on repo name patterns
-      const estimatedLoC = repoUrl.includes('plugin') ? 50000 : 100000;
-      return {
-        name: repoName,
-        url: repoUrl,
-        files: estimatedLoC > 100000 ? 3000 : 500,
-        loC: estimatedLoC,
-        note: 'Estimated'
-      };
+      error('[Coverage]', repoName, 'cloc failed - cannot access repository');
+      throw new Error(`Cannot calculate ${repoName} SLOC: cloc failed. Ensure GitHub repo is accessible.`);
     }
   } catch (err) {
-    warn('[Coverage] Error getting repo LOC:', repoName, err.message);
-    const estimatedLoC = repoUrl.includes('plugin') ? 50000 : 100000;
-    return {
-      name: repoName,
-      url: repoUrl,
-      files: estimatedLoC > 100000 ? 3000 : 500,
-      loC: estimatedLoC,
-      note: 'Fallback estimate'
-    };
+    error('[Coverage] Error getting repo LOC:', repoName, err.message);
+    throw err;
   }
 }
 
