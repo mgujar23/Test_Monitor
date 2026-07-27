@@ -207,29 +207,32 @@ export async function getCoverageMetrics(config, testData = null) {
     const proxyLoC = proxyRepos.reduce((sum, r) => sum + r.loC, 0);
     const totalLoC = portalLoC + reportingLoC + proxyLoC;
 
-    // Calculate coverage percentages based on actual test counts
-    // Coverage = (Test Count × Lines Per Test) / Total SLOC
-    // Industry standard: 5-20 LOC per test, using 8 as baseline
-    const linesPerTest = 8;
+    // Calculate coverage percentages based on test counts as ratio to expected baseline
+    // Coverage % = (Test Count / Expected Baseline) × 100
+    // Expected baseline: 500K tests for full coverage
+    const EXPECTED_BASELINE = 500000;
 
     // Use provided test data or fallback defaults
     const portalTests = testData?.portal || 325000;
     const reportingTests = testData?.reporting || 1089;
     const proxyTests = testData?.proxy || 10553;
+    const totalTests = testData?.total || (portalTests + reportingTests + proxyTests);
 
-    log('[Coverage] Test counts - Portal:', portalTests, 'Reporting:', reportingTests, 'Proxy:', proxyTests);
+    log('[Coverage] Test counts - Portal:', portalTests, 'Reporting:', reportingTests, 'Proxy:', proxyTests, 'Total:', totalTests);
 
-    // Calculate covered lines: test count × average lines per test
-    const portalCovered = portalTests * linesPerTest;
-    const reportingCovered = reportingTests * linesPerTest;
-    const proxyCovered = proxyTests * linesPerTest;
+    // Calculate coverage percentages based on test count as proxy
+    const portalCoveragePercent = Math.min(Math.round((portalTests / EXPECTED_BASELINE) * 100), 100);
+    const reportingCoveragePercent = Math.min(Math.round((reportingTests / EXPECTED_BASELINE) * 100), 100);
+    const proxyCoveragePercent = Math.min(Math.round((proxyTests / EXPECTED_BASELINE) * 100), 100);
+    const totalCoveragePercent = Math.min(Math.round((totalTests / EXPECTED_BASELINE) * 100), 100);
 
-    // Calculate percentage: capped at 100%
-    const portalCoveragePercent = Math.min(Math.round((portalCovered / portalLoC) * 100), 100);
-    const reportingCoveragePercent = Math.min(Math.round((reportingCovered / reportingLoC) * 100), 100);
-    const proxyCoveragePercent = Math.min(Math.round((proxyCovered / proxyLoC) * 100), 100);
+    // Calculate covered LOC based on coverage percentages
+    const portalCovered = Math.round(portalLoC * (portalCoveragePercent / 100));
+    const reportingCovered = Math.round(reportingLoC * (reportingCoveragePercent / 100));
+    const proxyCovered = Math.round(proxyLoC * (proxyCoveragePercent / 100));
+    const totalCovered = portalCovered + reportingCovered + proxyCovered;
 
-    log('[Coverage] Coverage % - Portal:', portalCoveragePercent + '%', 'Reporting:', reportingCoveragePercent + '%', 'Proxy:', proxyCoveragePercent + '%');
+    log('[Coverage] Coverage % - Portal:', portalCoveragePercent + '%', 'Reporting:', reportingCoveragePercent + '%', 'Proxy:', proxyCoveragePercent + '%', 'Total:', totalCoveragePercent + '%');
 
     const totalCovered = portalCovered + reportingCovered + proxyCovered;
     const overallCoveragePercent = Math.min(Math.round((totalCovered / totalLoC) * 100), 100);
