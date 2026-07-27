@@ -169,9 +169,11 @@ async function getRepoLoC(repoUrl, repoName) {
 }
 
 /**
- * Calculate coverage metrics based on actual LOC
+ * Calculate coverage metrics based on actual LOC and test counts
+ * @param {Object} config - Configuration object with perforce/github settings
+ * @param {Object} testData - Optional test summary data {portal, reporting, proxy, total}
  */
-export async function getCoverageMetrics(config) {
+export async function getCoverageMetrics(config, testData = null) {
   try {
     log('[Coverage] Calculating coverage metrics with area-wise distribution');
 
@@ -205,16 +207,32 @@ export async function getCoverageMetrics(config) {
     const proxyLoC = proxyRepos.reduce((sum, r) => sum + r.loC, 0);
     const totalLoC = portalLoC + reportingLoC + proxyLoC;
 
-    // Coverage percentages by area
-    const portalCoveragePercent = 65;
-    const reportingCoveragePercent = 60;
-    const proxyCoveragePercent = 70;
+    // Calculate coverage percentages based on actual test counts
+    // Coverage = (Test Count × Lines Per Test) / Total SLOC
+    // Industry standard: 5-20 LOC per test, using 8 as baseline
+    const linesPerTest = 8;
 
-    const portalCovered = Math.round(portalLoC * (portalCoveragePercent / 100));
-    const reportingCovered = Math.round(reportingLoC * (reportingCoveragePercent / 100));
-    const proxyCovered = Math.round(proxyLoC * (proxyCoveragePercent / 100));
+    // Use provided test data or fallback defaults
+    const portalTests = testData?.portal || 325000;
+    const reportingTests = testData?.reporting || 1089;
+    const proxyTests = testData?.proxy || 10553;
+
+    log('[Coverage] Test counts - Portal:', portalTests, 'Reporting:', reportingTests, 'Proxy:', proxyTests);
+
+    // Calculate covered lines: test count × average lines per test
+    const portalCovered = portalTests * linesPerTest;
+    const reportingCovered = reportingTests * linesPerTest;
+    const proxyCovered = proxyTests * linesPerTest;
+
+    // Calculate percentage: capped at 100%
+    const portalCoveragePercent = Math.min(Math.round((portalCovered / portalLoC) * 100), 100);
+    const reportingCoveragePercent = Math.min(Math.round((reportingCovered / reportingLoC) * 100), 100);
+    const proxyCoveragePercent = Math.min(Math.round((proxyCovered / proxyLoC) * 100), 100);
+
+    log('[Coverage] Coverage % - Portal:', portalCoveragePercent + '%', 'Reporting:', reportingCoveragePercent + '%', 'Proxy:', proxyCoveragePercent + '%');
+
     const totalCovered = portalCovered + reportingCovered + proxyCovered;
-    const overallCoveragePercent = Math.round((totalCovered / totalLoC) * 100);
+    const overallCoveragePercent = Math.min(Math.round((totalCovered / totalLoC) * 100), 100);
 
     log('[Coverage] Total SLOC:', totalLoC, 'Covered:', totalCovered, 'Coverage:', overallCoveragePercent + '%');
 
@@ -294,20 +312,20 @@ export async function getCoverageMetrics(config) {
         ]
       },
       recommendations: [
-        {
+        ...(reportingCoveragePercent < 75 ? [{
           priority: 'high',
-          message: 'Increase Reporting coverage to 75% (currently 60%)',
-          estimatedLoC: `add ~${Math.round(reportingLoC * 0.15).toLocaleString()} LOC coverage`
-        },
-        {
+          message: `Increase Reporting coverage to 75% (currently ${reportingCoveragePercent}%)`,
+          estimatedLoC: `need ~${Math.round((reportingLoC * 0.75 - reportingCovered) / linesPerTest).toLocaleString()} additional tests`
+        }] : []),
+        ...(overallCoveragePercent < 80 ? [{
           priority: 'medium',
           message: `Target 80% overall coverage (currently ${overallCoveragePercent}%)`,
-          estimatedLoC: `add ~${Math.round((totalLoC * 0.80 - totalCovered) / 1000).toLocaleString()}K LOC coverage`
-        },
+          estimatedLoC: `need ~${Math.round((totalLoC * 0.80 - totalCovered) / linesPerTest).toLocaleString()} additional tests`
+        }] : []),
         {
           priority: 'low',
-          message: 'Proxy and Portal coverage is strong (65-70%), maintain levels',
-          estimatedLoC: 'monitor quarterly'
+          message: `Portal (${portalCoveragePercent}%), Proxy (${proxyCoveragePercent}%), and Reporting (${reportingCoveragePercent}%) coverage - monitor quarterly`,
+          estimatedLoC: 'continue current testing strategy'
         }
       ]
     };
