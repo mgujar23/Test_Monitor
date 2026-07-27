@@ -20,14 +20,13 @@ export default function Header({ lastUpdateTime, onRefresh, isLoading, sectionGr
 
   return (
     <>
-      <header className="bg-dark-bg border-b border-gray-700/50 shadow-lg">
+      <header className="bg-dark-bg shadow-lg">
         <div className="max-w-7xl mx-auto px-6 py-8">
+          <div className="flex items-center justify-between mb-6">
+            <h1 className="text-3xl font-bold text-white">Cloud Web Test Monitor Dashboard</h1>
+          </div>
           <div className="flex items-center justify-between">
             <div>
-              <div className="flex items-center gap-3 mb-2">
-                <div className="w-2 h-8 bg-gradient-to-b from-blue-500 to-blue-600 rounded"></div>
-                <h1 className="text-5xl font-bold text-white tracking-tight">Test Monitor</h1>
-              </div>
               <p className="text-sm text-slate-400">
                 ⏱️ Last updated: {formatTimestamp(lastUpdateTime)}
               </p>

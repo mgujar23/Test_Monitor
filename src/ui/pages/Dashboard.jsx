@@ -117,76 +117,91 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="flex h-screen bg-dark-bg text-dark-text">
-      {/* Sidebar Navigation - Full Height */}
-      <div className="w-64 bg-dark-bg border-r border-gray-700 overflow-y-auto">
-        <div className="sticky top-0 bg-dark-bg border-b border-gray-700 p-6 z-10">
-          <h1 className="text-lg font-semibold text-dark-text">Cloud web Dashboard</h1>
-          <p className="text-sm text-gray-400 mt-1">Frame 5</p>
-        </div>
-        <div className="p-6">
-
-          <div className="space-y-4">
-            <button
-              onClick={() => setSelectedSidebarItem('readyCluster')}
-              className={`w-full text-left p-4 rounded-lg transition-all ${
-                selectedSidebarItem === 'readyCluster'
-                  ? 'bg-blue-900/50 border border-blue-700'
-                  : 'bg-gray-800 hover:bg-gray-700 border border-transparent'
-              }`}
-            >
-              <p className="text-dark-text font-medium text-sm">Ready Cluster Status</p>
-            </button>
-            <button
-              onClick={() => setSelectedSidebarItem('cstoreReporting')}
-              className={`w-full text-left p-4 rounded-lg transition-all ${
-                selectedSidebarItem === 'cstoreReporting'
-                  ? 'bg-blue-900/50 border border-blue-700'
-                  : 'bg-gray-800 hover:bg-gray-700 border border-transparent'
-              }`}
-            >
-              <p className="text-dark-text font-medium text-sm">CSTORE reporting test</p>
-            </button>
-            <button
-              onClick={() => setSelectedSidebarItem('etlSIEMCluster')}
-              className={`w-full text-left p-4 rounded-lg transition-all ${
-                selectedSidebarItem === 'etlSIEMCluster'
-                  ? 'bg-blue-900/50 border border-blue-700'
-                  : 'bg-gray-800 hover:bg-gray-700 border border-transparent'
-              }`}
-            >
-              <p className="text-dark-text font-medium text-sm">ETL SIEM cluster test</p>
-            </button>
-
-            <div className="bg-gray-800 p-4 rounded-lg mt-8">
-              <p className="text-dark-text font-medium text-sm mb-2">Recent changes</p>
-              <p className="text-gray-400 text-xs">in CSG_Service</p>
-              <p className="text-gray-500 text-xs mt-2">Frame 6</p>
-            </div>
+    <div className="flex flex-col h-screen bg-dark-bg text-dark-text">
+      {/* Header Row - Spans full width */}
+      <div className="flex border-b border-gray-700">
+        {/* Sidebar Header */}
+        <div className="w-64 bg-dark-bg border-r border-gray-700 p-6 h-[190px] flex flex-col justify-center">
+          <div className="px-6 py-2.5 rounded-lg font-semibold bg-gradient-to-r from-cyan-600 to-cyan-700 text-white shadow-lg inline-block">
+            Cluster Status
           </div>
+        </div>
+
+        {/* Main Header */}
+        <div className="flex-1">
+          <Header
+            lastUpdateTime={dashboardData?.timestamp}
+            lastRefreshTime={lastRefreshTime}
+            onRefresh={handleRefresh}
+            isLoading={loading || refreshing}
+            refreshing={refreshing}
+            sectionGroupStats={dashboardData?.aiInsights?.sectionGroupStats}
+          />
         </div>
       </div>
 
-      {/* Right Side - Header + Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <Header
-          lastUpdateTime={dashboardData?.timestamp}
-          lastRefreshTime={lastRefreshTime}
-          onRefresh={handleRefresh}
-          isLoading={loading || refreshing}
-          refreshing={refreshing}
-          sectionGroupStats={dashboardData?.aiInsights?.sectionGroupStats}
-        />
+      {/* Content Row - Spans full width */}
+      <div className="flex flex-1 overflow-hidden">
+        {/* Sidebar Navigation */}
+        <div className="w-64 bg-dark-bg border-r border-gray-700 overflow-y-auto">
+          <div className="p-6">
+            <div className="mb-6">
+              <button
+                onClick={() => setSelectedSidebarItem('readyCluster')}
+                className={`w-full text-left p-4 rounded-lg transition-all ${
+                  selectedSidebarItem === 'readyCluster'
+                    ? 'bg-blue-900/50 border border-blue-700'
+                    : 'bg-gray-800 hover:bg-gray-700 border border-transparent'
+                }`}
+              >
+                <p className="text-dark-text font-medium text-sm">
+                  {dashboardData?.sections?.readyCluster?.builds?.[0]?.clusterName?.split('.')[0] || 'Ready Cluster Status'}
+                </p>
+              </button>
+            </div>
 
-        {error && (
-          <div className="bg-red-900/20 border-b border-red-700/50 text-red-200 px-6 py-3">
-            ⚠️ {error}
+            <div className="space-y-4">
+              <button
+                onClick={() => setSelectedSidebarItem('cstoreReporting')}
+                className={`w-full text-left p-4 rounded-lg transition-all ${
+                  selectedSidebarItem === 'cstoreReporting'
+                    ? 'bg-blue-900/50 border border-blue-700'
+                    : 'bg-gray-800 hover:bg-gray-700 border border-transparent'
+                }`}
+              >
+                <p className="text-dark-text font-medium text-sm">CSTORE reporting test</p>
+              </button>
+              <button
+                onClick={() => setSelectedSidebarItem('etlSIEMCluster')}
+                className={`w-full text-left p-4 rounded-lg transition-all ${
+                  selectedSidebarItem === 'etlSIEMCluster'
+                    ? 'bg-blue-900/50 border border-blue-700'
+                    : 'bg-gray-800 hover:bg-gray-700 border border-transparent'
+                }`}
+              >
+                <p className="text-dark-text font-medium text-sm">ETL SIEM cluster test</p>
+              </button>
+
+              <div className="bg-gray-800 p-4 rounded-lg mt-8">
+                <p className="text-dark-text font-medium text-sm mb-2">Recent changes</p>
+                <p className="text-gray-400 text-xs">in CSG_Service</p>
+                <p className="text-gray-500 text-xs mt-2">Frame 6</p>
+              </div>
+            </div>
           </div>
-        )}
+        </div>
 
-        {/* Main Content */}
-        <main className="flex-1 overflow-y-auto p-8 bg-gradient-to-br from-dark-bg via-dark-bg to-dark-bg">
-          <div className="space-y-8">
+        {/* Main Content Area */}
+        <div className="flex-1 flex flex-col overflow-hidden overflow-y-auto">
+          {error && (
+            <div className="bg-red-900/20 border-b border-red-700/50 text-red-200 px-6 py-3">
+              ⚠️ {error}
+            </div>
+          )}
+
+          {/* Main Content */}
+          <main className="flex-1 overflow-y-auto p-8 bg-gradient-to-br from-dark-bg via-dark-bg to-dark-bg">
+            <div className="space-y-8">
             {dashboardData && (
               <>
                 {/* Portal Section */}
@@ -259,10 +274,12 @@ export default function Dashboard() {
                 </div>
               </>
             )}
-          </div>
-        </main>
+            </div>
+          </main>
+        </div>
+      </div>
 
-        {selectedTest && (
+      {selectedTest && (
         <DetailsModal
           testDetails={selectedTest}
           onClose={() => setSelectedTest(null)}
@@ -315,7 +332,6 @@ export default function Dashboard() {
           </div>
         </div>
       )}
-      </div>
     </div>
   );
 }

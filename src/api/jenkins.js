@@ -186,11 +186,21 @@ export async function fetchReadyClusterTests(config) {
         if (p4Config && p4Config.serverUrl) {
           log('[ReadyCluster] Fetching changes from main repo: //code_SaaS/csg_service');
 
+          try {
+            // Check if p4 CLI is available
+            execSync('which p4', { stdio: 'pipe' });
+          } catch (e) {
+            warn('[ReadyCluster] P4 CLI not found - please install helix-cli to fetch Perforce changes');
+            warn('[ReadyCluster] Install with: sudo yum install helix-cli');
+            throw new Error('P4 CLI not available');
+          }
+
           // Use p4 CLI to fetch recent changes from main repo
           const changesCmd = `p4 -p ${p4Config.serverUrl} -u ${p4Config.username} changes -m 1000 "//code_SaaS/csg_service/..."`;
           const changesOutput = execSync(changesCmd, {
             encoding: 'utf-8',
-            env: { ...process.env, P4PORT: p4Config.serverUrl, P4USER: p4Config.username }
+            env: { ...process.env, P4PORT: p4Config.serverUrl, P4USER: p4Config.username },
+            timeout: 30000
           });
 
           const changeLines = changesOutput.trim().split('\n').filter(line => line.length > 0);

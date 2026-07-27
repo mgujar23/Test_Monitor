@@ -5,8 +5,10 @@ import CoverageMetrics from './pages/CoverageMetrics';
 import './styles/index.css';
 
 export default function App() {
+  const basename = window.location.hostname === 'localhost' ? '/' : '/test-monitor';
+
   return (
-    <Router basename="/test-monitor">
+    <Router basename={basename}>
       <Routes>
         <Route path="/" element={<Dashboard />} />
         <Route path="/insights" element={<AIInsightsPage />} />

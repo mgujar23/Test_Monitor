@@ -17,7 +17,7 @@ export default function Sidebar({ dashboardData }) {
   return (
     <div className="w-64 bg-gray-100 p-6 min-h-screen">
       <div className="mb-8">
-        <h1 className="text-lg font-semibold text-gray-900">Cloud web Dashboard</h1>
+        <h1 className="text-lg font-semibold text-gray-900">Cloud web Test Monitor Dashboard</h1>
         <p className="text-sm text-gray-500 mt-1">Frame 5</p>
       </div>
 

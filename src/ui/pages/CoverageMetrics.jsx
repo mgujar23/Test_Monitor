@@ -67,7 +67,7 @@ export default function CoverageMetrics({ sectionGroupStats }) {
       </div>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-6 py-8">>
+      <div className="max-w-7xl mx-auto px-6 py-8">
         {loading ? (
           <div className="flex items-center justify-center h-96">
             <div className="text-center">
