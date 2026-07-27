@@ -317,12 +317,12 @@ export async function getCoverageMetrics(config, testData = null) {
         ...(reportingCoveragePercent < 75 ? [{
           priority: 'high',
           message: `Increase Reporting coverage to 75% (currently ${reportingCoveragePercent}%)`,
-          estimatedLoC: `need ~${Math.round((reportingLoC * 0.75 - reportingCovered) / linesPerTest).toLocaleString()} additional tests`
+          estimatedLoC: `need ~${Math.round((75 - reportingCoveragePercent) * EXPECTED_BASELINE / 100).toLocaleString()} additional tests`
         }] : []),
         ...(overallCoveragePercent < 80 ? [{
           priority: 'medium',
           message: `Target 80% overall coverage (currently ${overallCoveragePercent}%)`,
-          estimatedLoC: `need ~${Math.round((totalLoC * 0.80 - totalCovered) / linesPerTest).toLocaleString()} additional tests`
+          estimatedLoC: `need ~${Math.round((80 - totalCoveragePercent) * EXPECTED_BASELINE / 100).toLocaleString()} additional tests`
         }] : []),
         {
           priority: 'low',
