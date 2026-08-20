@@ -16,7 +16,9 @@ const SECTION_TITLES = {
   cstoreReporting: 'CSTORE Reporting Test',
   etlSIEM: 'ETL SIEM',
   etlSIEMCluster: 'ETL SIEM Cluster Test',
-  reportingMetrics: 'Reporting Metrics'
+  reportingMetrics: 'Reporting Metrics',
+  awsSystemTest: 'AWS System Test',
+  awsControl: 'AWS Control Test'
 };
 
 const SECTION_GROUPS = {
@@ -25,7 +27,9 @@ const SECTION_GROUPS = {
     sections: [
       ['selenium', 'Selenium Tests'],
       ['integrationTests', 'Integration Tests'],
-      ['smokeTests', 'Smoke Tests']
+      ['smokeTests', 'Smoke Tests'],
+      ['awsSystemTest', 'AWS System Test'],
+      ['awsControl', 'AWS Control Test']
     ]
   },
   proxy: {
@@ -119,74 +123,35 @@ export default function Dashboard() {
   return (
     <div className="flex flex-col h-screen bg-dark-bg text-dark-text">
       {/* Header Row - Spans full width */}
-      <div className="flex border-b border-gray-700">
-        {/* Sidebar Header */}
-        <div className="w-64 bg-dark-bg border-r border-gray-700 p-6 h-[190px] flex flex-col justify-center">
-          <div className="px-6 py-2.5 rounded-lg font-semibold bg-gradient-to-r from-cyan-600 to-cyan-700 text-white shadow-lg inline-block">
-            Cluster Status
-          </div>
-        </div>
-
-        {/* Main Header */}
-        <div className="flex-1">
-          <Header
-            lastUpdateTime={dashboardData?.timestamp}
-            lastRefreshTime={lastRefreshTime}
-            onRefresh={handleRefresh}
-            isLoading={loading || refreshing}
-            refreshing={refreshing}
-            sectionGroupStats={dashboardData?.aiInsights?.sectionGroupStats}
-          />
-        </div>
+      <div className="border-b border-gray-700">
+        <Header
+          lastUpdateTime={dashboardData?.timestamp}
+          lastRefreshTime={lastRefreshTime}
+          onRefresh={handleRefresh}
+          isLoading={loading || refreshing}
+          refreshing={refreshing}
+          sectionGroupStats={dashboardData?.aiInsights?.sectionGroupStats}
+        />
       </div>
 
       {/* Content Row - Spans full width */}
       <div className="flex flex-1 overflow-hidden">
         {/* Sidebar Navigation */}
-        <div className="w-64 bg-dark-bg border-r border-gray-700 overflow-y-auto">
-          <div className="p-6">
-            <div className="mb-6">
+        <div className="w-48 bg-dark-bg border-r border-gray-700 overflow-y-auto">
+          <div className="p-4">
+            <div className="mb-4">
               <button
                 onClick={() => setSelectedSidebarItem('readyCluster')}
-                className={`w-full text-left p-4 rounded-lg transition-all ${
+                className={`w-full text-left p-3 rounded-lg transition-all ${
                   selectedSidebarItem === 'readyCluster'
                     ? 'bg-blue-900/50 border border-blue-700'
                     : 'bg-gray-800 hover:bg-gray-700 border border-transparent'
                 }`}
               >
-                <p className="text-dark-text font-medium text-sm">
-                  {dashboardData?.sections?.readyCluster?.builds?.[0]?.clusterName?.split('.')[0] || 'Ready Cluster Status'}
+                <p className="text-dark-text font-medium text-xs">
+                  {dashboardData?.sections?.readyCluster?.builds?.[0]?.clusterName?.split('.')[0] || 'Ready Cluster'}
                 </p>
               </button>
-            </div>
-
-            <div className="space-y-4">
-              <button
-                onClick={() => setSelectedSidebarItem('cstoreReporting')}
-                className={`w-full text-left p-4 rounded-lg transition-all ${
-                  selectedSidebarItem === 'cstoreReporting'
-                    ? 'bg-blue-900/50 border border-blue-700'
-                    : 'bg-gray-800 hover:bg-gray-700 border border-transparent'
-                }`}
-              >
-                <p className="text-dark-text font-medium text-sm">CSTORE reporting test</p>
-              </button>
-              <button
-                onClick={() => setSelectedSidebarItem('etlSIEMCluster')}
-                className={`w-full text-left p-4 rounded-lg transition-all ${
-                  selectedSidebarItem === 'etlSIEMCluster'
-                    ? 'bg-blue-900/50 border border-blue-700'
-                    : 'bg-gray-800 hover:bg-gray-700 border border-transparent'
-                }`}
-              >
-                <p className="text-dark-text font-medium text-sm">ETL SIEM cluster test</p>
-              </button>
-
-              <div className="bg-gray-800 p-4 rounded-lg mt-8">
-                <p className="text-dark-text font-medium text-sm mb-2">Recent changes</p>
-                <p className="text-gray-400 text-xs">in CSG_Service</p>
-                <p className="text-gray-500 text-xs mt-2">Frame 6</p>
-              </div>
             </div>
           </div>
         </div>
@@ -210,7 +175,7 @@ export default function Dashboard() {
                     <span className="text-blue-400">📊</span>
                     <span>Portal</span>
                   </h2>
-                  <div className="grid grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
                     {SECTION_GROUPS.portal.sections.map(([sectionKey, sectionTitle]) => {
                       const section = dashboardData.sections[sectionKey];
                       if (!section) return null;
@@ -233,7 +198,7 @@ export default function Dashboard() {
                     <span className="text-green-400">🔒</span>
                     <span>Proxy</span>
                   </h2>
-                  <div className="grid grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
                     {SECTION_GROUPS.proxy.sections.map(([sectionKey, sectionTitle]) => {
                       const section = dashboardData.sections[sectionKey];
                       if (!section) return null;
@@ -256,7 +221,7 @@ export default function Dashboard() {
                     <span className="text-orange-400">📈</span>
                     <span>Reporting</span>
                   </h2>
-                  <div className="grid grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
                     {SECTION_GROUPS.reporting.sections.map(([sectionKey, sectionTitle]) => {
                       const section = dashboardData.sections[sectionKey];
                       if (!section) return null;
@@ -293,8 +258,6 @@ export default function Dashboard() {
             <div className="sticky top-0 bg-dark-bg border-b border-gray-700 p-6 flex items-center justify-between">
               <h2 className="text-2xl font-bold text-dark-text">
                 {selectedSidebarItem === 'readyCluster' && 'Ready Cluster Status'}
-                {selectedSidebarItem === 'cstoreReporting' && 'CSTORE reporting test'}
-                {selectedSidebarItem === 'etlSIEMCluster' && 'ETL SIEM cluster test'}
               </h2>
               <button
                 onClick={() => setSelectedSidebarItem(null)}
@@ -309,22 +272,6 @@ export default function Dashboard() {
                   title="Ready Cluster Status"
                   sectionKey="readyCluster"
                   data={dashboardData.sections.readyCluster}
-                  onClickMetric={handleClickMetric}
-                />
-              )}
-              {dashboardData && selectedSidebarItem === 'cstoreReporting' && (
-                <Section
-                  title="CSTORE reporting test"
-                  sectionKey="cstoreReporting"
-                  data={dashboardData.sections.cstoreReporting}
-                  onClickMetric={handleClickMetric}
-                />
-              )}
-              {dashboardData && selectedSidebarItem === 'etlSIEMCluster' && (
-                <Section
-                  title="ETL SIEM cluster test"
-                  sectionKey="etlSIEMCluster"
-                  data={dashboardData.sections.etlSIEMCluster}
                   onClickMetric={handleClickMetric}
                 />
               )}
