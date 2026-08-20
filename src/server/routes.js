@@ -9,6 +9,16 @@ export default function routes(config) {
   const router = express.Router();
   const DEMO_MODE = process.env.DEMO_MODE === 'true';
 
+  // The background job (jobs.js) only refreshes every refreshIntervalMinutes,
+  // and a stale cache isn't refreshed on-demand by a request — so the cache's
+  // staleness threshold must exceed the refresh interval (plus room for the
+  // refresh itself to run) or every cycle has a guaranteed window where the
+  // cache is considered stale before the next scheduled refresh completes,
+  // and these routes 503 for that whole window. 5 minutes of headroom covers
+  // typical refresh duration plus cron timing drift.
+  const refreshIntervalMinutes = config.app?.refreshIntervalMinutes || 15;
+  const CACHE_MAX_AGE_MS = (refreshIntervalMinutes * 60 * 1000) + (5 * 60 * 1000);
+
   // Task 11: Dashboard endpoint - returns full cached data or mock data if DEMO_MODE
   router.get('/dashboard', (req, res) => {
     try {
@@ -18,7 +28,7 @@ export default function routes(config) {
         dashboardData = generateMockDashboardData();
         console.log('[Routes] Serving mock dashboard data (DEMO_MODE enabled)');
       } else {
-        dashboardData = loadCache();
+        dashboardData = loadCache(CACHE_MAX_AGE_MS);
         if (!dashboardData) {
           return res.status(503).json({
             error: 'Cache not available',
@@ -40,7 +50,7 @@ export default function routes(config) {
   router.get('/failed-tests/:section', (req, res) => {
     try {
       const { section } = req.params;
-      const cachedData = loadCache();
+      const cachedData = loadCache(CACHE_MAX_AGE_MS);
 
       if (!cachedData) {
         return res.status(503).json({
@@ -88,7 +98,7 @@ export default function routes(config) {
   router.get('/test-details/:testId', (req, res) => {
     try {
       const { testId } = req.params;
-      const cachedData = loadCache();
+      const cachedData = loadCache(CACHE_MAX_AGE_MS);
 
       if (!cachedData) {
         return res.status(503).json({
@@ -151,15 +161,17 @@ export default function routes(config) {
   router.get('/coverage-metrics', async (req, res) => {
     try {
       // Get test data from dashboard cache for accurate coverage calculation
-      const dashboardData = loadCache();
+      const dashboardData = loadCache(CACHE_MAX_AGE_MS);
       const testData = dashboardData?.aiInsights?.sectionGroupStats ? {
         portal: dashboardData.aiInsights.sectionGroupStats.portal || 325000,
         reporting: dashboardData.aiInsights.sectionGroupStats.reporting || 1089,
         proxy: dashboardData.aiInsights.sectionGroupStats.proxy || 10553,
+        aws: dashboardData.aiInsights.sectionGroupStats.aws ?? null,
         total: dashboardData.aiInsights.sectionGroupStats.total || 336642
       } : null;
 
-      const metrics = await getCoverageMetrics(config, testData);
+      const jenkinsCoverage = dashboardData?.jenkinsCoverage || null;
+      const metrics = await getCoverageMetrics(config, testData, jenkinsCoverage);
       if (!metrics) {
         return res.status(503).json({
           error: 'Coverage metrics not available',

@@ -7,7 +7,13 @@ export default defineConfig({
   preview: {
     host: '0.0.0.0',
     port: 5173,
-    allowedHosts: ['test-monitor.infra-dev.forcepoint.net', 'localhost']
+    allowedHosts: ['test-monitor.infra-dev.forcepoint.net', 'localhost'],
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3000',
+        changeOrigin: true
+      }
+    }
   },
   server: {
     host: '0.0.0.0',

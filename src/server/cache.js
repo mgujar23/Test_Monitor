@@ -26,13 +26,19 @@ export function createEmptyDashboardData() {
   };
 }
 
+// Default cache staleness threshold, used only when a caller doesn't pass
+// an explicit maxAgeMs. Callers that know the configured background-refresh
+// interval (see routes.js) should pass a maxAgeMs derived from it, so the
+// cache never goes stale before the next scheduled refresh can complete.
+const DEFAULT_MAX_CACHE_AGE_MS = 10 * 60 * 1000; // 10 minutes
+
 /**
  * Check if cache is valid and not stale
  * Cache is considered invalid if:
- * - Older than 10 minutes
+ * - Older than maxAgeMs
  * - Empty or missing sections
  */
-function isCacheValid() {
+function isCacheValid(maxAgeMs = DEFAULT_MAX_CACHE_AGE_MS) {
   try {
     if (!fs.existsSync(CACHE_FILE)) {
       log('[Cache] Cache file does not exist - will refresh');
@@ -47,12 +53,11 @@ function isCacheValid() {
       return false;
     }
 
-    // Check if cache is older than 10 minutes
+    // Check if cache is older than maxAgeMs
     const cacheAge = Date.now() - new Date(data.cacheCreatedAt).getTime();
-    const MAX_CACHE_AGE = 10 * 60 * 1000; // 10 minutes
 
-    if (cacheAge > MAX_CACHE_AGE) {
-      log(`[Cache] Cache is ${Math.round(cacheAge / 1000)}s old (max: ${MAX_CACHE_AGE / 1000}s) - will refresh`);
+    if (cacheAge > maxAgeMs) {
+      log(`[Cache] Cache is ${Math.round(cacheAge / 1000)}s old (max: ${maxAgeMs / 1000}s) - will refresh`);
       return false;
     }
 
@@ -97,8 +102,11 @@ export function initializeCache() {
  * Load cache from dashboard-data.json file
  * Returns null if file doesn't exist, is invalid, or is stale
  * This ensures fresh data is fetched periodically
+ * @param {number} [maxAgeMs] - staleness threshold; pass a value derived from
+ *   the configured background-refresh interval so the cache doesn't expire
+ *   before the next scheduled refresh can complete (see routes.js)
  */
-export function loadCache() {
+export function loadCache(maxAgeMs = DEFAULT_MAX_CACHE_AGE_MS) {
   try {
     if (!fs.existsSync(CACHE_FILE)) {
       warn('[Cache] Cache file not found, returning null to fetch fresh data');
@@ -106,7 +114,7 @@ export function loadCache() {
     }
 
     // Check if cache is valid before returning
-    if (!isCacheValid()) {
+    if (!isCacheValid(maxAgeMs)) {
       log('[Cache] Cache is stale or invalid, returning null to fetch fresh data');
       return null;
     }

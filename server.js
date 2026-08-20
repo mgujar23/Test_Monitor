@@ -44,7 +44,12 @@ initializeCache();
 app.use('/api', routes(config));
 
 // Serve static React files (in production)
-app.use(express.static(path.join(__dirname, 'dist')));
+app.use('/test-monitor', express.static(path.join(__dirname, 'dist')));
+
+// SPA fallback - serve index.html for all non-API routes under /test-monitor
+app.get('/test-monitor/*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+});
 
 // Error handling
 app.use(errorHandler);

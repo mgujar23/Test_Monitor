@@ -3,6 +3,8 @@
  * Global test configuration and utilities
  */
 
+import { jest } from '@jest/globals';
+
 // Global test utilities
 global.testConfig = {
   backendUrl: process.env.BACKEND_URL || 'http://localhost:3000',

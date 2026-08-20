@@ -1,8 +1,11 @@
-import { execSync } from 'child_process';
+import { exec } from 'child_process';
+import { promisify } from 'util';
 import { readFileSync } from 'fs';
 import { homedir } from 'os';
 import { join } from 'path';
 import { log, warn, error } from '../server/logger.js';
+
+const execAsync = promisify(exec);
 
 
 function getP4Ticket(serverUrl, username) {
@@ -74,7 +77,7 @@ export async function fetchRecentChanges(config) {
     try {
       const changesCmd = `p4 changes -m 10 "${depotPath}..."`;
       log('[P4-Changes] Running:', changesCmd);
-      const changesOutput = execSync(changesCmd, {
+      const { stdout: changesOutput } = await execAsync(changesCmd, {
         encoding: 'utf-8',
         env: process.env,
         timeout: 10000  // 10 second timeout
@@ -158,7 +161,7 @@ export async function fetchNewTestsAdded(config) {
       const changesCmd = `p4 changes -m 1000 "${depotPath}/..."`;
       log('[P4] Running command: p4 changes...');
 
-      const changesOutput = execSync(changesCmd, {
+      const { stdout: changesOutput } = await execAsync(changesCmd, {
         encoding: 'utf-8',
         env: process.env
       });
@@ -197,7 +200,7 @@ export async function fetchNewTestsAdded(config) {
 
           // Get files in this change
           const filesCmd = `p4 -p ${serverUrl} -u ${username} describe -s ${changeNum}`;
-          const filesOutput = execSync(filesCmd, {
+          const { stdout: filesOutput } = await execAsync(filesCmd, {
             encoding: 'utf-8',
             env: { ...process.env, P4PORT: serverUrl, P4USER: username }
           });
