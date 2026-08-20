@@ -1,355 +1,141 @@
-import { execSync } from 'child_process';
-import { log, warn, error } from '../server/logger.js';
-import fs from 'fs';
+import { readFileSync } from 'fs';
+import { fileURLToPath } from 'url';
 import path from 'path';
+import { log, error } from '../server/logger.js';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+let locReport = null;
+try {
+  locReport = JSON.parse(readFileSync(path.join(__dirname, '../data/loc-report.json'), 'utf-8'));
+} catch (err) {
+  error('[Coverage] Failed to load src/data/loc-report.json:', err.message);
+  locReport = null;
+}
+
+const EXPECTED_BASELINE = 500000;
 
 /**
- * Calculate SLOC by counting code lines in files (fallback when cloc unavailable)
+ * @param {number} areaLoC
+ * @param {number|null} testCount - null means no test-count source exists for this area yet
+ * @param {number} totalLoC - grand total SLOC across all areas, used to scale this area's
+ *   share of EXPECTED_BASELINE so a small module isn't held to the same target as the
+ *   whole codebase
  */
-function countLinesInFiles(dirPath) {
-  try {
-    let totalLines = 0;
-    let fileCount = 0;
-    const extensions = ['.js', '.py', '.java', '.pl', '.sql', '.ts', '.tsx', '.jsx', '.go', '.rb', '.php'];
+function computeAreaCoverage(areaLoC, testCount, totalLoC) {
+  const baseline = EXPECTED_BASELINE * (areaLoC / totalLoC);
+  if (testCount === null) {
+    return { coveragePercentage: null, coveredLoC: 0, baseline };
+  }
+  const coveragePercentage = Math.min(Math.round((testCount / baseline) * 100), 100);
+  const coveredLoC = Math.round(areaLoC * (coveragePercentage / 100));
+  return { coveragePercentage, coveredLoC, baseline };
+}
 
-    function walkDir(dir) {
-      try {
-        const files = fs.readdirSync(dir);
-        for (const file of files) {
-          if (['.git', 'node_modules', '.venv', '__pycache__', 'vendor'].includes(file)) continue;
+function areaFileCount(areaKey) {
+  const area = locReport.areas[areaKey];
+  const rows = area.directories || area.repos;
+  return rows.reduce((sum, r) => sum + (r.files || 0), 0);
+}
 
-          const filePath = path.join(dir, file);
-          const stat = fs.statSync(filePath);
-
-          if (stat.isDirectory()) {
-            walkDir(filePath);
-          } else if (extensions.some(ext => file.endsWith(ext))) {
-            try {
-              const content = fs.readFileSync(filePath, 'utf-8');
-              totalLines += content.split('\n').length;
-              fileCount++;
-            } catch (e) {
-              // Skip unreadable files
-            }
-          }
-        }
-      } catch (e) {
-        // Directory access error
-      }
-    }
-
-    walkDir(dirPath);
-    return { loC: totalLines, files: fileCount };
-  } catch (err) {
+/**
+ * Calculate coverage metrics from the static LOC dataset (src/data/loc-report.json)
+ * combined with live test counts.
+ * @param {Object} config - unused now that measurement is static; kept for call-site compatibility
+ * @param {Object|null} testData - {portal, reporting, proxy, total} test counts from the dashboard cache
+ * @param {Object|null} jenkinsCoverage - real, tool-measured coverage from the dashboard cache
+ *   (src/api/jenkins-coverage.js, fetched by the background refresh job — never fetched here,
+ *   this function stays network-free). Shape: {reporting: {...}, proxy: {...}}, passed through
+ *   as-is under `jenkinsReportedCoverage` since it needs no further computation.
+ */
+export async function getCoverageMetrics(config, testData = null, jenkinsCoverage = null) {
+  if (locReport === null) {
     return null;
   }
-}
 
-/**
- * Calculate SLOC using cloc for any path (local, git URL, or P4 depot)
- */
-function calculateSLOC(path, isGitUrl = false, isP4 = false) {
-  try {
-    let clocCmd = '';
+  log('[Coverage] Building coverage metrics from static loc-report.json (generated', locReport.generatedDate + ')');
 
-    if (isGitUrl) {
-      // For GitHub URLs, try to clone and count
-      clocCmd = `cloc "${path}" --json --exclude-dir=node_modules,vendor,third-party,.git 2>/dev/null`;
-    } else if (isP4) {
-      // For P4 paths, cloc can work with depot paths
-      clocCmd = `cloc "${path}" --json --exclude-dir=node_modules,vendor,third-party,.git 2>/dev/null`;
-    } else {
-      // For local paths
-      clocCmd = `cloc "${path}" --json --exclude-dir=node_modules,vendor,third-party,.git 2>/dev/null`;
-    }
+  const portalLoC = locReport.areas.portal.totalLoC;
+  const awsLoC = locReport.areas.aws.totalLoC;
+  const reportingLoC = locReport.areas.reporting.totalLoC;
+  const proxyLoC = locReport.areas.proxy.totalLoC;
+  const totalLoC = portalLoC + awsLoC + reportingLoC + proxyLoC;
 
-    const clocOutput = execSync(clocCmd, {
-      encoding: 'utf-8',
-      timeout: 120000,
-      shell: '/bin/bash',
-      stdio: ['pipe', 'pipe', 'pipe']
-    });
+  const portalTests = testData?.portal || 325000;
+  const reportingTests = testData?.reporting || 1089;
+  const proxyTests = testData?.proxy || 10553;
+  const totalTests = testData?.total || (portalTests + reportingTests + proxyTests);
 
-    const clocData = JSON.parse(clocOutput);
-    return clocData;
-  } catch (err) {
-    warn(`[Coverage] cloc failed for ${path}:`, err.message);
-    return null;
-  }
-}
+  const portal = computeAreaCoverage(portalLoC, portalTests, totalLoC);
+  const reporting = computeAreaCoverage(reportingLoC, reportingTests, totalLoC);
+  const proxy = computeAreaCoverage(proxyLoC, proxyTests, totalLoC);
+  const aws = computeAreaCoverage(awsLoC, testData?.aws ?? null, totalLoC);
 
-/**
- * Calculate logical SLOC for Perforce //code_SaaS/csg_service
- */
-async function getPerforceLoC(config) {
-  try {
-    const depotPath = '//code_SaaS/csg_service/';
-    log('[Coverage] Calculating SLOC for Perforce:', depotPath);
+  const totalCovered = portal.coveredLoC + aws.coveredLoC + reporting.coveredLoC + proxy.coveredLoC;
+  const overallCoveragePercent = Math.min(Math.round((totalCovered / totalLoC) * 100), 100);
+  const totalCoveragePercent = Math.min(Math.round((totalTests / EXPECTED_BASELINE) * 100), 100);
 
-    if (config.perforce && config.perforce.serverUrl) {
-      process.env.P4PORT = config.perforce.serverUrl;
-      process.env.P4USER = config.perforce.username || 'mailcontrol';
-    }
+  log('[Coverage] Coverage % - Portal:', portal.coveragePercentage + '%', 'AWS:', aws.coveragePercentage, 'Reporting:', reporting.coveragePercentage + '%', 'Proxy:', proxy.coveragePercentage + '%', 'Overall:', overallCoveragePercent + '%');
 
-    const clocData = calculateSLOC(depotPath, false, true);
+  const byArea = {
+    portal: { name: 'Portal', totalLoC: portalLoC, totalFiles: areaFileCount('portal'), coveredLoC: portal.coveredLoC, coveragePercentage: portal.coveragePercentage, testCount: portalTests, expectedBaseline: Math.round(portal.baseline) },
+    aws: { name: 'AWS', totalLoC: awsLoC, totalFiles: areaFileCount('aws'), coveredLoC: aws.coveredLoC, coveragePercentage: aws.coveragePercentage, testCount: testData?.aws ?? null, expectedBaseline: Math.round(aws.baseline) },
+    reporting: { name: 'Reporting', totalLoC: reportingLoC, totalFiles: areaFileCount('reporting'), coveredLoC: reporting.coveredLoC, coveragePercentage: reporting.coveragePercentage, testCount: reportingTests, expectedBaseline: Math.round(reporting.baseline) },
+    proxy: { name: 'Proxy', totalLoC: proxyLoC, totalFiles: areaFileCount('proxy'), coveredLoC: proxy.coveredLoC, coveragePercentage: proxy.coveragePercentage, testCount: proxyTests, expectedBaseline: Math.round(proxy.baseline) }
+  };
 
-    if (clocData && clocData.SUM) {
-      log('[Coverage] P4 SLOC:', clocData.SUM.code, 'files:', clocData.SUM.nFiles);
-      return {
-        source: 'Perforce',
-        path: depotPath,
-        files: clocData.SUM.nFiles || 0,
-        loC: clocData.SUM.code || 0,
-        comments: clocData.SUM.comment || 0,
-        blank: clocData.SUM.blank || 0,
-        note: 'Logical SLOC measured from Perforce'
-      };
-    } else {
-      error('[Coverage] Failed to calculate P4 SLOC - cloc error or network issue');
-      throw new Error('Cannot calculate Perforce SLOC: cloc failed. Ensure P4 CLI is configured and network accessible.');
-    }
-  } catch (err) {
-    error('[Coverage] Error getting P4 LOC:', err.message);
-    throw err;
-  }
-}
+  const bySource = {
+    portal: { source: 'Portal', loC: portalLoC, files: byArea.portal.totalFiles, coveragePercentage: portal.coveragePercentage },
+    aws: { source: 'AWS', loC: awsLoC, files: byArea.aws.totalFiles, coveragePercentage: aws.coveragePercentage },
+    reporting: { source: 'Reporting', loC: reportingLoC, files: byArea.reporting.totalFiles, coveragePercentage: reporting.coveragePercentage },
+    proxy: { source: 'Proxy', loC: proxyLoC, files: byArea.proxy.totalFiles, coveragePercentage: proxy.coveragePercentage }
+  };
 
-/**
- * Calculate logical SLOC for GitHub CSG repository
- */
-async function getGitHubCSGLoC(config) {
-  try {
-    const repoUrl = 'https://github.cicd.cloud.fpdev.io/CSG';
-    log('[Coverage] Calculating SLOC for GitHub CSG:', repoUrl);
-
-    const clocData = calculateSLOC(repoUrl, true);
-
-    if (clocData && clocData.SUM) {
-      log('[Coverage] GitHub CSG SLOC:', clocData.SUM.code, 'files:', clocData.SUM.nFiles);
-      return {
-        source: 'GitHub',
-        repository: repoUrl,
-        files: clocData.SUM.nFiles || 0,
-        loC: clocData.SUM.code || 0,
-        comments: clocData.SUM.comment || 0,
-        blank: clocData.SUM.blank || 0,
-        note: 'Logical SLOC measured'
-      };
-    } else {
-      warn('[Coverage] GitHub CSG cloc failed, using estimate');
-      return {
-        source: 'GitHub',
-        repository: repoUrl,
-        files: 3000,
-        loC: 250000,
-        note: 'Estimated SLOC (cloc failed)'
-      };
-    }
-  } catch (err) {
-    error('[Coverage] Error getting GitHub CSG LOC:', err.message);
-    return {
-      source: 'GitHub',
-      repository: 'https://github.cicd.cloud.fpdev.io/CSG',
-      files: 3000,
-      loC: 250000,
-      note: 'Fallback estimate'
-    };
-  }
-}
-
-/**
- * Calculate logical SLOC for individual repositories
- */
-async function getRepoLoC(repoUrl, repoName) {
-  try {
-    const clocData = calculateSLOC(repoUrl, true);
-
-    if (clocData && clocData.SUM) {
-      log('[Coverage]', repoName, 'SLOC:', clocData.SUM.code);
-      return {
-        name: repoName,
-        url: repoUrl,
-        files: clocData.SUM.nFiles || 0,
-        loC: clocData.SUM.code || 0,
-        comments: clocData.SUM.comment || 0,
-        blank: clocData.SUM.blank || 0,
-        note: 'Measured'
-      };
-    } else {
-      error('[Coverage]', repoName, 'cloc failed - cannot access repository');
-      throw new Error(`Cannot calculate ${repoName} SLOC: cloc failed. Ensure GitHub repo is accessible.`);
-    }
-  } catch (err) {
-    error('[Coverage] Error getting repo LOC:', repoName, err.message);
-    throw err;
-  }
-}
-
-/**
- * Calculate coverage metrics based on actual LOC and test counts
- * @param {Object} config - Configuration object with perforce/github settings
- * @param {Object} testData - Optional test summary data {portal, reporting, proxy, total}
- */
-export async function getCoverageMetrics(config, testData = null) {
-  try {
-    log('[Coverage] Calculating coverage metrics with area-wise distribution');
-
-    // Fetch Perforce metrics
-    const p4Metrics = await getPerforceLoC(config);
-
-    // Portal repos
-    const portalRepos = [
-      await getRepoLoC('https://github.cicd.cloud.fpdev.io/CPT/claude-plugins', 'claude-plugins')
-    ];
-
-    // Reporting repos
-    const reportingRepos = [
-      await getRepoLoC('https://github.cicd.cloud.fpdev.io/CSG/csg_service-reporting', 'csg_service-reporting'),
-      await getRepoLoC('https://github.cicd.cloud.fpdev.io/CSG/etl-siem', 'etl-siem'),
-      await getRepoLoC('https://github.cicd.cloud.fpdev.io/CSG/siem', 'siem'),
-      await getRepoLoC('https://github.cicd.cloud.fpdev.io/CSG/csg-signal360-orchestrator', 'csg-signal360-orchestrator'),
-      await getRepoLoC('https://github.cicd.cloud.fpdev.io/CSG/siem-log-export', 'siem-log-export'),
-      await getRepoLoC('https://github.cicd.cloud.fpdev.io/CSG/siem-insights-export', 'siem-insights-export'),
-      await getRepoLoC('https://github.cicd.cloud.fpdev.io/CSG/insights-file-management', 'insights-file-management')
-    ];
-
-    // Proxy repos
-    const proxyRepos = [
-      await getRepoLoC('https://github.cicd.cloud.fpdev.io/CSG/csg_service-prx', 'csg_service-prx')
-    ];
-
-    // Calculate totals by area
-    const portalLoC = (p4Metrics?.loC || 1018000) + portalRepos.reduce((sum, r) => sum + r.loC, 0);
-    const reportingLoC = reportingRepos.reduce((sum, r) => sum + r.loC, 0);
-    const proxyLoC = proxyRepos.reduce((sum, r) => sum + r.loC, 0);
-    const totalLoC = portalLoC + reportingLoC + proxyLoC;
-
-    // Calculate coverage percentages based on test counts as ratio to expected baseline
-    // Coverage % = (Test Count / Expected Baseline) × 100
-    // Expected baseline: 500K tests for full coverage
-    const EXPECTED_BASELINE = 500000;
-
-    // Use provided test data or fallback defaults
-    const portalTests = testData?.portal || 325000;
-    const reportingTests = testData?.reporting || 1089;
-    const proxyTests = testData?.proxy || 10553;
-    const totalTests = testData?.total || (portalTests + reportingTests + proxyTests);
-
-    log('[Coverage] Test counts - Portal:', portalTests, 'Reporting:', reportingTests, 'Proxy:', proxyTests, 'Total:', totalTests);
-
-    // Calculate coverage percentages based on test count as proxy
-    const portalCoveragePercent = Math.min(Math.round((portalTests / EXPECTED_BASELINE) * 100), 100);
-    const reportingCoveragePercent = Math.min(Math.round((reportingTests / EXPECTED_BASELINE) * 100), 100);
-    const proxyCoveragePercent = Math.min(Math.round((proxyTests / EXPECTED_BASELINE) * 100), 100);
-    const totalCoveragePercent = Math.min(Math.round((totalTests / EXPECTED_BASELINE) * 100), 100);
-
-    // Calculate covered LOC based on coverage percentages
-    const portalCovered = Math.round(portalLoC * (portalCoveragePercent / 100));
-    const reportingCovered = Math.round(reportingLoC * (reportingCoveragePercent / 100));
-    const proxyCovered = Math.round(proxyLoC * (proxyCoveragePercent / 100));
-    const totalCovered = portalCovered + reportingCovered + proxyCovered;
-
-    log('[Coverage] Coverage % - Portal:', portalCoveragePercent + '%', 'Reporting:', reportingCoveragePercent + '%', 'Proxy:', proxyCoveragePercent + '%', 'Total:', totalCoveragePercent + '%');
-
-    const overallCoveragePercent = Math.min(Math.round((totalCovered / totalLoC) * 100), 100);
-
-    log('[Coverage] Total SLOC:', totalLoC, 'Covered:', totalCovered, 'Coverage:', overallCoveragePercent + '%');
-
-    // Area-wise repos
-    const areaRepos = {
-      'Portal': [
-        { name: 'csg_service (P4)', loC: p4Metrics?.loC || 1018000, files: p4Metrics?.files || 8289 },
-        ...portalRepos.map(r => ({ name: r.name, loC: r.loC, files: r.files }))
-      ],
-      'Reporting': reportingRepos.map(r => ({ name: r.name, loC: r.loC, files: r.files })),
-      'Proxy': proxyRepos.map(r => ({ name: r.name, loC: r.loC, files: r.files }))
-    };
-
-    return {
-      timestamp: new Date().toISOString(),
-      summary: {
-        totalLoC: totalLoC,
-        coveredLoC: totalCovered,
-        uncoveredLoC: totalLoC - totalCovered,
-        coveragePercentage: overallCoveragePercent
+  return {
+    generatedDate: locReport.generatedDate,
+    timestamp: new Date().toISOString(),
+    jenkinsReportedCoverage: jenkinsCoverage,
+    summary: {
+      totalLoC,
+      coveredLoC: totalCovered,
+      uncoveredLoC: totalLoC - totalCovered,
+      coveragePercentage: overallCoveragePercent,
+      expectedBaseline: EXPECTED_BASELINE
+    },
+    byArea,
+    bySource,
+    distribution: {
+      areaTables: {
+        portal: { totalLoC: portalLoC, rows: locReport.areas.portal.directories },
+        aws: { totalLoC: awsLoC, rows: locReport.areas.aws.repos },
+        reporting: { totalLoC: reportingLoC, rows: locReport.areas.reporting.repos },
+        proxy: { totalLoC: proxyLoC, rows: locReport.areas.proxy.repos }
       },
-      byArea: {
-        portal: {
-          name: 'Portal',
-          totalLoC: portalLoC,
-          totalFiles: portalRepos.reduce((sum, r) => sum + r.files, 0) + (p4Metrics?.files || 8289),
-          coveredLoC: portalCovered,
-          coveragePercentage: portalCoveragePercent,
-          repos: areaRepos['Portal']
-        },
-        reporting: {
-          name: 'Reporting',
-          totalLoC: reportingLoC,
-          totalFiles: reportingRepos.reduce((sum, r) => sum + r.files, 0),
-          coveredLoC: reportingCovered,
-          coveragePercentage: reportingCoveragePercent,
-          repos: areaRepos['Reporting']
-        },
-        proxy: {
-          name: 'Proxy',
-          totalLoC: proxyLoC,
-          totalFiles: proxyRepos.reduce((sum, r) => sum + r.files, 0),
-          coveredLoC: proxyCovered,
-          coveragePercentage: proxyCoveragePercent,
-          repos: areaRepos['Proxy']
-        }
-      },
-      bySource: {
-        portal: {
-          source: 'Portal',
-          loC: portalLoC,
-          files: areaRepos['Portal'].reduce((sum, r) => sum + r.files, 0),
-          coveragePercentage: portalCoveragePercent
-        },
-        reporting: {
-          source: 'Reporting',
-          loC: reportingLoC,
-          files: areaRepos['Reporting'].reduce((sum, r) => sum + r.files, 0),
-          coveragePercentage: reportingCoveragePercent
-        },
-        proxy: {
-          source: 'Proxy',
-          loC: proxyLoC,
-          files: areaRepos['Proxy'].reduce((sum, r) => sum + r.files, 0),
-          coveragePercentage: proxyCoveragePercent
-        }
-      },
-      distribution: {
-        areaRepos: areaRepos,
-        topLanguages: [
-          { lang: 'Perl (.pm)', loC: Math.round(portalLoC * 0.25), percent: 22 },
-          { lang: 'SQL (.sql)', loC: Math.round(portalLoC * 0.15), percent: 13 },
-          { lang: 'JavaScript (.js)', loC: Math.round(totalLoC * 0.12), percent: 11 },
-          { lang: 'Python (.py)', loC: Math.round(reportingLoC * 0.15), percent: 10 },
-          { lang: 'TypeScript (.ts)', loC: Math.round(totalLoC * 0.10), percent: 9 },
-          { lang: 'Java (.java)', loC: Math.round(reportingLoC * 0.10), percent: 8 }
-        ]
-      },
-      recommendations: [
-        ...(reportingCoveragePercent < 75 ? [{
-          priority: 'high',
-          message: `Increase Reporting coverage to 75% (currently ${reportingCoveragePercent}%)`,
-          estimatedLoC: `need ~${Math.round((75 - reportingCoveragePercent) * EXPECTED_BASELINE / 100).toLocaleString()} additional tests`
-        }] : []),
-        ...(overallCoveragePercent < 80 ? [{
-          priority: 'medium',
-          message: `Target 80% overall coverage (currently ${overallCoveragePercent}%)`,
-          estimatedLoC: `need ~${Math.round((80 - totalCoveragePercent) * EXPECTED_BASELINE / 100).toLocaleString()} additional tests`
-        }] : []),
-        {
-          priority: 'low',
-          message: `Portal (${portalCoveragePercent}%), Proxy (${proxyCoveragePercent}%), and Reporting (${reportingCoveragePercent}%) coverage - monitor quarterly`,
-          estimatedLoC: 'continue current testing strategy'
-        }
+      topLanguages: [
+        { lang: 'Perl (.pm)', loC: Math.round(portalLoC * 0.25), percent: 22 },
+        { lang: 'SQL (.sql)', loC: Math.round(portalLoC * 0.15), percent: 13 },
+        { lang: 'JavaScript (.js)', loC: Math.round(totalLoC * 0.12), percent: 11 },
+        { lang: 'Python (.py)', loC: Math.round(reportingLoC * 0.15), percent: 10 },
+        { lang: 'TypeScript (.ts)', loC: Math.round(totalLoC * 0.10), percent: 9 },
+        { lang: 'Java (.java)', loC: Math.round(reportingLoC * 0.10), percent: 8 }
       ]
-    };
-  } catch (err) {
-    error('[Coverage] Error calculating coverage metrics:', err.message);
-    return null;
-  }
+    },
+    recommendations: [
+      ...(reporting.coveragePercentage < 75 ? [{
+        priority: 'high',
+        message: `Increase Reporting coverage to 75% (currently ${reporting.coveragePercentage}%)`,
+        estimatedLoC: `need ~${Math.round((75 - reporting.coveragePercentage) * reporting.baseline / 100).toLocaleString()} additional tests`
+      }] : []),
+      ...(overallCoveragePercent < 80 ? [{
+        priority: 'medium',
+        message: `Target 80% overall coverage (currently ${overallCoveragePercent}%)`,
+        estimatedLoC: `need ~${Math.round((80 - totalCoveragePercent) * EXPECTED_BASELINE / 100).toLocaleString()} additional tests`
+      }] : []),
+      {
+        priority: 'low',
+        message: `Portal (${portal.coveragePercentage}%), Proxy (${proxy.coveragePercentage}%), and Reporting (${reporting.coveragePercentage}%) coverage - monitor quarterly`,
+        estimatedLoC: 'continue current testing strategy'
+      }
+    ]
+  };
 }

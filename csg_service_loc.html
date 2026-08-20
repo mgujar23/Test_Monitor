@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>csg_service - Lines of Code</title>
+<style>
+  body { font-family: -apple-system, Segoe UI, Arial, sans-serif; margin: 2rem; color: #1a1a1a; }
+  h1 { font-size: 1.4rem; margin-bottom: 0.2rem; }
+  .subtitle { color: #666; margin-bottom: 1.5rem; font-size: 0.9rem; }
+  table { border-collapse: collapse; width: 100%; max-width: 900px; margin-bottom: 1.5rem; }
+  th, td { border: 1px solid #ddd; padding: 6px 10px; text-align: left; font-size: 0.9rem; }
+  th { background: #f4f4f4; position: sticky; top: 0; }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  tr.total td { font-weight: bold; background: #f9f9f9; }
+  .method-sonar { color: #2a6f2a; }
+  .method-cloc { color: #1a4f8f; }
+  .notes { max-width: 900px; font-size: 0.85rem; color: #444; line-height: 1.5; }
+  .notes h2 { font-size: 1rem; margin-top: 1.5rem; }
+  .summary { display: flex; flex-wrap: wrap; gap: 12px; max-width: 1000px; margin-bottom: 2rem; }
+  .summary .card { flex: 1 1 160px; border: 1px solid #ddd; border-radius: 8px; padding: 12px 16px; background: #fafafa; }
+  .summary .card .label { font-size: 0.78rem; color: #666; text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 4px; }
+  .summary .card .value { font-size: 1.4rem; font-weight: bold; font-variant-numeric: tabular-nums; }
+  .summary .card.grand { background: #eef4ff; border-color: #b9d2ff; }
+</style>
+</head>
+<body>
+
+<div class="summary">
+  <div class="card">
+    <div class="label">Total Portal LoC</div>
+    <div class="value">3,657,741</div>
+  </div>
+  <div class="card">
+    <div class="label">Total AWS LoC</div>
+    <div class="value">57,466</div>
+  </div>
+  <div class="card">
+    <div class="label">Total Reporting LoC</div>
+    <div class="value">1,184,492</div>
+  </div>
+  <div class="card">
+    <div class="label">Total Proxy LoC</div>
+    <div class="value">316,684</div>
+  </div>
+  <div class="card grand">
+    <div class="label">Total Cloud Web LoC</div>
+    <div class="value">5,216,383</div>
+  </div>
+</div>
+
+<h1>//code_SaaS/csg_service/ &mdash; Logical Lines of Code</h1>
+<p class="subtitle">Code lines only (blank lines and comments excluded). Generated 2026-07-28.</p>
+
+<table id="loc-table">
+  <thead>
+    <tr>
+      <th>Directory / Project</th>
+      <th>LOC (code only)</th>
+      <th>Method</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td>csg_service-testing-dev</td><td class="num">591,865</td><td class="method-sonar">SonarQube (ncloc)</td></tr>
+    <tr><td>categorization</td><td class="num">1,133,366</td><td class="method-cloc">cloc</td></tr>
+    <tr><td>csg_service-portal_apollo-dev</td><td class="num">378,920</td><td class="method-sonar">SonarQube (ncloc)</td></tr>
+    <tr><td>rly</td><td class="num">821,582</td><td class="method-cloc">cloc</td></tr>
+    <tr><td>csg_service-portal_ui-dev</td><td class="num">179,364</td><td class="method-sonar">SonarQube (ncloc)</td></tr>
+    <tr><td>csg_service-portal_tsaas-dev</td><td class="num">121,698</td><td class="method-sonar">SonarQube (ncloc)</td></tr>
+    <tr><td>csg_service-cfg_database-dev</td><td class="num">117,153</td><td class="method-sonar">SonarQube (ncloc)</td></tr>
+    <tr><td>csg_service-java-cloud-framework-dev</td><td class="num">83,045</td><td class="method-sonar">SonarQube (ncloc)</td></tr>
+    <tr><td>dcc</td><td class="num">55,062</td><td class="method-cloc">cloc</td></tr>
+    <tr><td>csg_service-common-dev</td><td class="num">51,003</td><td class="method-sonar">SonarQube (ncloc)</td></tr>
+    <tr><td>csg_service-log_sync-dev</td><td class="num">17,798</td><td class="method-sonar">SonarQube (ncloc)</td></tr>
+    <tr><td>policy</td><td class="num">19,783</td><td class="method-cloc">cloc</td></tr>
+    <tr><td>csg_service-legacy_etl-dev</td><td class="num">16,113</td><td class="method-sonar">SonarQube (ncloc)</td></tr>
+    <tr><td>csg_service-cfg_renderer-dev</td><td class="num">15,861</td><td class="method-sonar">SonarQube (ncloc)</td></tr>
+    <tr><td>csg_service-portal_dlp-dev</td><td class="num">14,981</td><td class="method-sonar">SonarQube (ncloc)</td></tr>
+    <tr><td>csg_service-portal_task-dev</td><td class="num">9,738</td><td class="method-sonar">SonarQube (ncloc)</td></tr>
+    <tr><td>csg_service-java-cloud-shared-dev</td><td class="num">6,482</td><td class="method-sonar">SonarQube (ncloc)</td></tr>
+    <tr><td>csg_service-hobbit-dev</td><td class="num">5,613</td><td class="method-sonar">SonarQube (ncloc)</td></tr>
+    <tr><td>csg_service-java-common-utils-dev</td><td class="num">4,680</td><td class="method-sonar">SonarQube (ncloc)</td></tr>
+    <tr><td>csg_service-log_aggregation-dev</td><td class="num">4,408</td><td class="method-sonar">SonarQube (ncloc)</td></tr>
+    <tr><td>bmr</td><td class="num">2,286</td><td class="method-cloc">cloc</td></tr>
+    <tr><td>csg_service-cfg_wc-dev</td><td class="num">2,316</td><td class="method-sonar">SonarQube (ncloc)</td></tr>
+    <tr><td>wsdb_file_update</td><td class="num">1,628</td><td class="method-cloc">cloc</td></tr>
+    <tr><td>csg_service-fdm-dev</td><td class="num">1,166</td><td class="method-sonar">SonarQube (ncloc)</td></tr>
+    <tr><td>csg_service-cca_server-dev</td><td class="num">550</td><td class="method-sonar">SonarQube (ncloc)</td></tr>
+    <tr><td>hybrid</td><td class="num">788</td><td class="method-cloc">cloc</td></tr>
+    <tr><td>csg_service-vmk-dev</td><td class="num">216</td><td class="method-sonar">SonarQube (ncloc)</td></tr>
+    <tr><td>csg_service-context-dev</td><td class="num">150</td><td class="method-sonar">SonarQube (ncloc)</td></tr>
+    <tr><td>perl</td><td class="num">116</td><td class="method-cloc">cloc</td></tr>
+    <tr><td>proxy</td><td class="num">10</td><td class="method-cloc">cloc</td></tr>
+    <tr><td>cfg_testing</td><td class="num">0</td><td class="method-cloc">cloc &mdash; 303 of 304 files deleted at head</td></tr>
+    <tr class="total"><td>TOTAL</td><td class="num">3,657,741</td><td></td></tr>
+  </tbody>
+</table>
+
+<div class="notes">
+  <h2>Breakdown</h2>
+  <ul>
+    <li>SonarQube-covered subtree (21 projects): 1,623,120</li>
+    <li>cloc-covered subtree &mdash; bmr, categorization, cfg_testing, dcc, hybrid, perl, policy, proxy, rly, wsdb_file_update (10 dirs): 2,034,621</li>
+  </ul>
+
+  <h2>Methodology notes</h2>
+  <ul>
+    <li>Both columns measure the same thing: code lines only, excluding blank lines and comments (SonarQube's <code>ncloc</code> metric and cloc's "code" count use the same definition).</li>
+    <li><code>rly</code> and <code>categorization</code> had their vendored/third-party code (sendmail, KeyView, 7-Zip, etc. under <code>third-party/</code> paths) excluded &mdash; only proprietary code counted.</li>
+    <li>No local copy of the code was retained &mdash; all file content fetched from Perforce for the cloc pass was deleted immediately after each directory was scanned.</li>
+    <li>Four SonarQube projects were removed from this table because their branch names (master, PR-N, feature/wsc-*) prove they're scans of separate GitHub repos, not Perforce directories: <code>csg_service-prx</code> (67,348 &mdash; already counted in Proxy Code), <code>csg_service-reporting</code> (1 &mdash; already counted in Reporting Code LOC), <code>csg_service-control_plane_api</code> (485), <code>csg_service-control_plane_ui</code> (0), <code>csg_service-load_balancer</code> (0). None of these four names exist as subdirectories in the actual Perforce depot.</li>
+    <li>Source: Perforce depot <code>//code_SaaS/csg_service/</code> on <code>perforce.cicd.cloud.fpdev.io:1666</code>, cross-referenced with SonarQube instance <code>sonarqube-ent.cicd.cloud.fpdev.io</code>.</li>
+  </ul>
+</div>
+
+<h1>Reporting Code LOC</h1>
+<p class="subtitle">Code lines only (blank lines and comments excluded). Repo-wise distribution. Generated 2026-07-28.</p>
+
+<table id="reporting-code-loc-table">
+  <thead>
+    <tr>
+      <th>Repository</th>
+      <th>Files</th>
+      <th>Code</th>
+      <th>Comment</th>
+      <th>Blank</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td>csg_service-reporting</td><td class="num">7,665</td><td class="num">1,009,615</td><td class="num">41,443</td><td class="num">69,765</td></tr>
+    <tr><td>etl-siem</td><td class="num">173</td><td class="num">129,636</td><td class="num">1,534</td><td class="num">7,722</td></tr>
+    <tr><td>siem</td><td class="num">171</td><td class="num">18,408</td><td class="num">2,026</td><td class="num">3,348</td></tr>
+    <tr><td>csg-signal360-orchestrator</td><td class="num">108</td><td class="num">18,038</td><td class="num">5,299</td><td class="num">3,875</td></tr>
+    <tr><td>siem-insights-export</td><td class="num">40</td><td class="num">6,297</td><td class="num">868</td><td class="num">997</td></tr>
+    <tr><td>siem-log-export</td><td class="num">22</td><td class="num">1,620</td><td class="num">176</td><td class="num">349</td></tr>
+    <tr><td>insights-file-management</td><td class="num">21</td><td class="num">878</td><td class="num">69</td><td class="num">253</td></tr>
+    <tr class="total"><td>TOTAL</td><td class="num">8,200</td><td class="num">1,184,492</td><td class="num">51,415</td><td class="num">86,309</td></tr>
+  </tbody>
+</table>
+
+<div class="notes">
+  <h2>Methodology notes</h2>
+  <ul>
+    <li>Repos, all under <code>https://github.cicd.cloud.fpdev.io/CSG/</code>: csg_service-reporting, etl-siem, siem, csg-signal360-orchestrator, siem-log-export, siem-insights-export, insights-file-management.</li>
+    <li>Full clones via HTTPS (shallow clone failed on this GHE instance with "remote did not send all necessary objects" on csg_service-reporting), scanned with cloc, deleted immediately after &mdash; no local copies retained.</li>
+  </ul>
+</div>
+
+<h1>AWS Repos</h1>
+<p class="subtitle">Code lines only (blank lines and comments excluded). Repo-wise distribution. Generated 2026-07-28.</p>
+
+<table id="aws-repos-table">
+  <thead>
+    <tr>
+      <th>Repository</th>
+      <th>Files</th>
+      <th>Code</th>
+      <th>Comment</th>
+      <th>Blank</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td>web-security-control</td><td class="num">143</td><td class="num">25,485</td><td class="num">1,964</td><td class="num">4,265</td></tr>
+    <tr><td>web-security-custom-categories</td><td class="num">98</td><td class="num">12,861</td><td class="num">893</td><td class="num">2,236</td></tr>
+    <tr><td>web-security-bypass-settings</td><td class="num">80</td><td class="num">12,904</td><td class="num">650</td><td class="num">1,954</td></tr>
+    <tr><td>web-security-platform-provisioning</td><td class="num">78</td><td class="num">6,216</td><td class="num">447</td><td class="num">1,341</td></tr>
+    <tr class="total"><td>TOTAL</td><td class="num">399</td><td class="num">57,466</td><td class="num">3,954</td><td class="num">9,796</td></tr>
+  </tbody>
+</table>
+
+<div class="notes">
+  <h2>Methodology notes</h2>
+  <ul>
+    <li>Repos, all under <code>https://github.cicd.cloud.fpdev.io/CPT/</code>: web-security-control, web-security-bypass-settings, web-security-platform-provisioning, web-security-custom-categories.</li>
+    <li>Full clones via HTTPS, scanned with cloc, deleted immediately after &mdash; no local copies retained.</li>
+  </ul>
+</div>
+
+<h1>Proxy Code</h1>
+<p class="subtitle">Code lines only (blank lines and comments excluded). Generated 2026-07-28.</p>
+
+<table id="proxy-code-table">
+  <thead>
+    <tr>
+      <th>Repository / Path</th>
+      <th>Files</th>
+      <th>Code</th>
+      <th>Comment</th>
+      <th>Blank</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td>csg_service-prx/proxy</td><td class="num">752</td><td class="num">313,870</td><td class="num">39,266</td><td class="num">36,281</td></tr>
+    <tr><td>web-security-casb-proxy-auth-token</td><td class="num">55</td><td class="num">2,814</td><td class="num">239</td><td class="num">612</td></tr>
+    <tr class="total"><td>TOTAL</td><td class="num">807</td><td class="num">316,684</td><td class="num">39,505</td><td class="num">36,893</td></tr>
+  </tbody>
+</table>
+
+<div class="notes">
+  <h2>Methodology notes</h2>
+  <ul>
+    <li><code>csg_service-prx/proxy</code>: full clone of <code>https://github.cicd.cloud.fpdev.io/CSG/csg_service-prx</code> (~180MB repo), cloc scoped to just the <code>proxy/</code> subdirectory.</li>
+    <li><code>web-security-casb-proxy-auth-token</code>: full repo from <code>https://github.cicd.cloud.fpdev.io/CPT/web-security-casb-proxy-auth-token</code>.</li>
+    <li>Clones deleted immediately after scanning &mdash; no local copies retained.</li>
+  </ul>
+</div>
+
+</body>
+</html>

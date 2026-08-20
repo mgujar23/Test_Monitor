@@ -1,0 +1,80 @@
+{
+  "generatedDate": "2026-07-28",
+  "grandTotalLoC": 5216383,
+  "notes": [
+    "Both LoC columns measure the same thing: code lines only, excluding blank lines and comments (SonarQube's ncloc metric and cloc's \"code\" count use the same definition).",
+    "rly and categorization had their vendored/third-party code (sendmail, KeyView, 7-Zip, etc. under third-party/ paths) excluded — only proprietary code counted.",
+    "No local copy of the code was retained — all file content fetched from Perforce for the cloc pass was deleted immediately after each directory was scanned.",
+    "Four SonarQube projects were removed from the Portal table because their branch names (master, PR-N, feature/wsc-*) prove they're scans of separate GitHub repos, not Perforce directories: csg_service-prx (already counted in Proxy), csg_service-reporting (already counted in Reporting), csg_service-control_plane_api, csg_service-control_plane_ui, csg_service-load_balancer. None of these four names exist as subdirectories in the actual Perforce depot.",
+    "Portal source: Perforce depot //code_SaaS/csg_service/ on perforce.cicd.cloud.fpdev.io:1666, cross-referenced with SonarQube instance sonarqube-ent.cicd.cloud.fpdev.io.",
+    "Reporting repos: full clones via HTTPS (shallow clone failed on this GHE instance with \"remote did not send all necessary objects\" on csg_service-reporting), scanned with cloc, deleted immediately after — no local copies retained.",
+    "AWS repos: full clones via HTTPS, scanned with cloc, deleted immediately after — no local copies retained.",
+    "Proxy: csg_service-prx/proxy is a full clone of csg_service-prx (~180MB repo) scoped to just the proxy/ subdirectory; web-security-casb-proxy-auth-token is a full repo. Clones deleted immediately after scanning."
+  ],
+  "areas": {
+    "portal": {
+      "totalLoC": 3657741,
+      "directories": [
+        { "name": "csg_service-testing-dev", "loC": 591865, "method": "SonarQube (ncloc)" },
+        { "name": "categorization", "loC": 1133366, "method": "cloc" },
+        { "name": "csg_service-portal_apollo-dev", "loC": 378920, "method": "SonarQube (ncloc)" },
+        { "name": "rly", "loC": 821582, "method": "cloc" },
+        { "name": "csg_service-portal_ui-dev", "loC": 179364, "method": "SonarQube (ncloc)" },
+        { "name": "csg_service-portal_tsaas-dev", "loC": 121698, "method": "SonarQube (ncloc)" },
+        { "name": "csg_service-cfg_database-dev", "loC": 117153, "method": "SonarQube (ncloc)" },
+        { "name": "csg_service-java-cloud-framework-dev", "loC": 83045, "method": "SonarQube (ncloc)" },
+        { "name": "dcc", "loC": 55062, "method": "cloc" },
+        { "name": "csg_service-common-dev", "loC": 51003, "method": "SonarQube (ncloc)" },
+        { "name": "csg_service-log_sync-dev", "loC": 17798, "method": "SonarQube (ncloc)" },
+        { "name": "policy", "loC": 19783, "method": "cloc" },
+        { "name": "csg_service-legacy_etl-dev", "loC": 16113, "method": "SonarQube (ncloc)" },
+        { "name": "csg_service-cfg_renderer-dev", "loC": 15861, "method": "SonarQube (ncloc)" },
+        { "name": "csg_service-portal_dlp-dev", "loC": 14981, "method": "SonarQube (ncloc)" },
+        { "name": "csg_service-portal_task-dev", "loC": 9738, "method": "SonarQube (ncloc)" },
+        { "name": "csg_service-java-cloud-shared-dev", "loC": 6482, "method": "SonarQube (ncloc)" },
+        { "name": "csg_service-hobbit-dev", "loC": 5613, "method": "SonarQube (ncloc)" },
+        { "name": "csg_service-java-common-utils-dev", "loC": 4680, "method": "SonarQube (ncloc)" },
+        { "name": "csg_service-log_aggregation-dev", "loC": 4408, "method": "SonarQube (ncloc)" },
+        { "name": "bmr", "loC": 2286, "method": "cloc" },
+        { "name": "csg_service-cfg_wc-dev", "loC": 2316, "method": "SonarQube (ncloc)" },
+        { "name": "wsdb_file_update", "loC": 1628, "method": "cloc" },
+        { "name": "csg_service-fdm-dev", "loC": 1166, "method": "SonarQube (ncloc)" },
+        { "name": "csg_service-cca_server-dev", "loC": 550, "method": "SonarQube (ncloc)" },
+        { "name": "hybrid", "loC": 788, "method": "cloc" },
+        { "name": "csg_service-vmk-dev", "loC": 216, "method": "SonarQube (ncloc)" },
+        { "name": "csg_service-context-dev", "loC": 150, "method": "SonarQube (ncloc)" },
+        { "name": "perl", "loC": 116, "method": "cloc" },
+        { "name": "proxy", "loC": 10, "method": "cloc" },
+        { "name": "cfg_testing", "loC": 0, "method": "cloc — 303 of 304 files deleted at head" }
+      ]
+    },
+    "aws": {
+      "totalLoC": 57466,
+      "repos": [
+        { "name": "web-security-control", "files": 143, "code": 25485, "comment": 1964, "blank": 4265 },
+        { "name": "web-security-custom-categories", "files": 98, "code": 12861, "comment": 893, "blank": 2236 },
+        { "name": "web-security-bypass-settings", "files": 80, "code": 12904, "comment": 650, "blank": 1954 },
+        { "name": "web-security-platform-provisioning", "files": 78, "code": 6216, "comment": 447, "blank": 1341 }
+      ]
+    },
+    "reporting": {
+      "totalLoC": 1184492,
+      "repos": [
+        { "name": "csg_service-reporting", "files": 7665, "code": 1009615, "comment": 41443, "blank": 69765 },
+        { "name": "etl-siem", "files": 173, "code": 129636, "comment": 1534, "blank": 7722 },
+        { "name": "siem", "files": 171, "code": 18408, "comment": 2026, "blank": 3348 },
+        { "name": "csg-signal360-orchestrator", "files": 108, "code": 18038, "comment": 5299, "blank": 3875 },
+        { "name": "siem-insights-export", "files": 40, "code": 6297, "comment": 868, "blank": 997 },
+        { "name": "siem-log-export", "files": 22, "code": 1620, "comment": 176, "blank": 349 },
+        { "name": "insights-file-management", "files": 21, "code": 878, "comment": 69, "blank": 253 }
+      ]
+    },
+    "proxy": {
+      "totalLoC": 316684,
+      "repos": [
+        { "name": "csg_service-prx/proxy", "files": 752, "code": 313870, "comment": 39266, "blank": 36281 },
+        { "name": "web-security-casb-proxy-auth-token", "files": 55, "code": 2814, "comment": 239, "blank": 612 }
+      ]
+    }
+  }
+}
