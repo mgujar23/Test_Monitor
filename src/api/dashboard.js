@@ -3,6 +3,8 @@ import { fetchReadyClusterTests, fetchIntegrationTests, fetchSmokeTests } from '
 import { fetchSeleniumTests } from './selenium.js';
 import { fetchNewTestsAdded, fetchRecentChanges } from './perforce.js';
 import { fetchCSGServiceReporting, fetchCSTOREReporting, fetchETLSIEM, fetchETLSIEMClusterTest, fetchReportingMetrics, fetchPRXAutoTest } from './reporting.js';
+import { fetchAWSSystemTest, fetchAWSControlTest } from './aws-tests.js';
+import { fetchReportingJacocoCoverage, fetchProxyPythonCoverage } from './jenkins-coverage.js';
 import { aggregateSectionData, formatTimestamp, loadFixesFile } from './utils.js';
 import { generateAIInsights } from './ai-insights.js';
 
@@ -23,7 +25,13 @@ export async function aggregateDashboardData(config) {
       etlSIEM: {},
       etlSIEMCluster: {},
       reportingMetrics: { total: 0, failed: 0, stale: 0, areas: [] },
-      prxAutoTest: {}
+      prxAutoTest: {},
+      awsSystemTest: {},
+      awsControl: {}
+    },
+    jenkinsCoverage: {
+      reporting: { name: 'Reporting (csg_service-reporting)', percentage: null, available: false },
+      proxy: { name: 'Proxy (PrxAutotests)', percentage: null, available: false }
     },
     aiInsights: {
       healthScore: 0,
@@ -38,7 +46,7 @@ export async function aggregateDashboardData(config) {
 
   try {
     // Fetch from all sources in parallel
-    const [readyCluster, selenium, integration, smoke, newTests, csgServiceReporting, cstoreReporting, etlSIEM, etlSIEMCluster, reportingMetrics, prxAutoTest, recentChanges] = await Promise.allSettled([
+    const [readyCluster, selenium, integration, smoke, newTests, csgServiceReporting, cstoreReporting, etlSIEM, etlSIEMCluster, reportingMetrics, prxAutoTest, recentChanges, awsSystemTest, awsControl, reportingJacocoCoverage, proxyPythonCoverage] = await Promise.allSettled([
       fetchReadyClusterTests(config),
       fetchSeleniumTests(config.selenium.portalUrl),
       fetchIntegrationTests(config),
@@ -50,7 +58,11 @@ export async function aggregateDashboardData(config) {
       fetchETLSIEMClusterTest(config),
       fetchReportingMetrics(config),
       fetchPRXAutoTest(config),
-      fetchRecentChanges(config)
+      fetchRecentChanges(config),
+      fetchAWSSystemTest(config),
+      fetchAWSControlTest(config),
+      fetchReportingJacocoCoverage(config),
+      fetchProxyPythonCoverage(config)
     ]);
 
     // Process results
@@ -126,6 +138,30 @@ export async function aggregateDashboardData(config) {
       results.sections.prxAutoTest = prxAutoTest.value;
     } else {
       error('PRX Auto Test fetch failed:', prxAutoTest.reason);
+    }
+
+    if (awsSystemTest.status === 'fulfilled') {
+      results.sections.awsSystemTest = awsSystemTest.value;
+    } else {
+      error('AWS System Test fetch failed:', awsSystemTest.reason);
+    }
+
+    if (awsControl.status === 'fulfilled') {
+      results.sections.awsControl = awsControl.value;
+    } else {
+      error('AWS Control Test fetch failed:', awsControl.reason);
+    }
+
+    if (reportingJacocoCoverage.status === 'fulfilled') {
+      results.jenkinsCoverage.reporting = reportingJacocoCoverage.value;
+    } else {
+      error('Reporting JaCoCo coverage fetch failed:', reportingJacocoCoverage.reason);
+    }
+
+    if (proxyPythonCoverage.status === 'fulfilled') {
+      results.jenkinsCoverage.proxy = proxyPythonCoverage.value;
+    } else {
+      error('Proxy coverage.py fetch failed:', proxyPythonCoverage.reason);
     }
 
     // Log warnings for high failure counts

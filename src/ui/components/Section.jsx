@@ -174,7 +174,7 @@ export default function Section({ title, data, sectionKey, onClickMetric }) {
           </div>
 
           {/* Metric Boxes - Always Visible */}
-          <div className="grid grid-cols-4 gap-3 mb-4">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
             {(sectionKey === 'selenium' ? [
               { key: 'total', label: 'Unique tests run', value: data.total || 0 },
               { key: 'totalAvailable', label: 'Total available tests', value: data.totalAvailable || 0 },
@@ -194,14 +194,14 @@ export default function Section({ title, data, sectionKey, onClickMetric }) {
                   setSelectedArea(null);
                   setCurrentPage(0);
                 }}
-                className={`p-3 rounded border transition-colors ${
+                className={`p-3 rounded border transition-colors min-w-0 ${
                   selectedMetric === metric.key
                     ? 'bg-blue-900/50 border-blue-500 border-2'
                     : 'bg-dark-bg border-dark-border hover:border-gray-500'
                 }`}
               >
-                <div className="text-gray-400 text-xs mb-1">{metric.label}</div>
-                <div className={`text-2xl font-bold ${
+                <div className="text-gray-400 text-xs mb-1 truncate">{metric.label}</div>
+                <div className={`text-2xl font-bold truncate ${
                   metric.key === 'failed' ? 'text-red-400' :
                   metric.key === 'stale' ? 'text-yellow-400' :
                   metric.key === 'passed' ? 'text-green-400' :
@@ -805,7 +805,7 @@ export default function Section({ title, data, sectionKey, onClickMetric }) {
   }
 
   // ========== REPORTING STATISTICS TABLE SECTIONS WITH AREAS ==========
-  if (['csgServiceReporting', 'cstoreReporting', 'etlSIEM', 'etlSIEMCluster', 'prxAutoTest'].includes(sectionKey) && data?.buildNumber) {
+  if (['csgServiceReporting', 'cstoreReporting', 'etlSIEM', 'etlSIEMCluster', 'prxAutoTest', 'awsSystemTest', 'awsControl'].includes(sectionKey) && data?.buildNumber) {
     const passed = (data.total || 0) - (data.failed || 0);
     const passingPercentage = data.total > 0 ? ((passed / data.total) * 100).toFixed(2) : '0.00';
 
@@ -909,6 +909,31 @@ export default function Section({ title, data, sectionKey, onClickMetric }) {
             <div className="flex justify-end mb-4">
               <a
                 href="https://jenkins.infra-dev.forcepoint.net/job/Projects/job/Test/job/PrxAutotests/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-400 hover:text-blue-300 text-xs underline"
+              >
+                Click here for more details →
+              </a>
+            </div>
+          )}
+
+          {sectionKey === 'awsSystemTest' && (
+            <div className="flex justify-end mb-4">
+              <a
+                href="https://jenkins.cicd.cloud.fpdev.io/job/GHE-CPT-DEV/job/web-security-system-test/job/master/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-400 hover:text-blue-300 text-xs underline"
+              >
+                Click here for more details →
+              </a>
+            </div>
+          )}
+          {sectionKey === 'awsControl' && (
+            <div className="flex justify-end mb-4">
+              <a
+                href="https://jenkins.cicd.cloud.fpdev.io/job/GHE-CPT-DEV/job/web-security-control/job/master/"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-blue-400 hover:text-blue-300 text-xs underline"

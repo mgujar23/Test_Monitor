@@ -65,11 +65,16 @@ export default function Header({ lastUpdateTime, onRefresh, isLoading, sectionGr
         <div className="bg-dark-bg border-b border-gray-700/50 py-6 pl-0 pr-6">
           <div>
             <h3 className="text-xs font-bold text-gray-400 mb-4 uppercase tracking-wider pl-8">📊 Test Summary</h3>
-            <div className="grid grid-cols-4 gap-4 mb-6 pl-8 pr-0">
+            <div className="grid grid-cols-3 sm:grid-cols-5 gap-4 mb-6 pl-8 pr-0">
               <div className="bg-gray-800/50 border border-gray-700/50 rounded-lg p-4 hover:border-blue-500/50 transition-all shadow-md hover:shadow-lg">
                 <div className="text-gray-400 text-xs font-semibold mb-2 uppercase tracking-wide">Portal</div>
                 <div className="text-xl font-bold text-blue-400">{(sectionGroupStats.portal || 0).toLocaleString()}</div>
                 <div className="text-slate-500 text-xs mt-2 font-medium">tests</div>
+              </div>
+              <div className="bg-purple-900/30 border border-purple-700/50 rounded-lg p-4 hover:border-purple-500/50 transition-all shadow-md hover:shadow-lg">
+                <div className="text-purple-300 text-xs font-semibold mb-2 uppercase tracking-wide">AWS</div>
+                <div className="text-xl font-bold text-purple-400">{(sectionGroupStats.aws || 0).toLocaleString()}</div>
+                <div className="text-purple-400/70 text-xs mt-2 font-medium">tests</div>
               </div>
               <div className="bg-gray-800/50 border border-gray-700/50 rounded-lg p-4 hover:border-green-500/50 transition-all shadow-md hover:shadow-lg">
                 <div className="text-gray-400 text-xs font-semibold mb-2 uppercase tracking-wide">Proxy</div>
@@ -139,7 +144,7 @@ export default function Header({ lastUpdateTime, onRefresh, isLoading, sectionGr
                     <>
                       <strong>How it's calculated:</strong><br/>
                       Passed tests: {(sectionGroupStats.total - sectionGroupStats.totalFailed)?.toLocaleString()} ÷ Total tests: {sectionGroupStats.total?.toLocaleString()} = {sectionGroupStats.passingPercentage}%<br/><br/>
-                      Shows the percentage of all tests that are passing across Portal ({sectionGroupStats.passingPercentage}%), Proxy, and Reporting sections.
+                      Shows the percentage of all tests that are passing across Portal, AWS, Proxy, and Reporting sections.
                     </>
                   )}
                 </p>
@@ -159,6 +164,10 @@ export default function Header({ lastUpdateTime, onRefresh, isLoading, sectionGr
                   <div className="flex justify-between">
                     <span>Reporting: {sectionGroupStats.reporting?.toLocaleString()} tests</span>
                     <span className="text-orange-400">{sectionGroupStats.reporting > 0 ? Math.round(((sectionGroupStats.reporting - sectionGroupStats.reportingFailed) / sectionGroupStats.reporting) * 100) : 0}% passing</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>AWS: {sectionGroupStats.aws?.toLocaleString()} tests</span>
+                    <span className="text-purple-400">{sectionGroupStats.aws > 0 ? Math.round(((sectionGroupStats.aws - sectionGroupStats.awsFailed) / sectionGroupStats.aws) * 100) : 0}% passing</span>
                   </div>
                 </div>
               </div>

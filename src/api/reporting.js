@@ -364,7 +364,7 @@ export async function fetchETLSIEMClusterTest(config) {
 }
 
 // Helper function to extract areas from test suites
-function extractAreasFromSuites(suites) {
+export function extractAreasFromSuites(suites) {
   const areaMap = {};
 
   suites.forEach(suite => {
@@ -751,7 +751,7 @@ export async function fetchPRXReleaseCluster(config) {
   }
 }
 
-function getDefaultReportingStats() {
+export function getDefaultReportingStats() {
   return {
     name: 'Reporting Suite',
     buildNumber: 'N/A',

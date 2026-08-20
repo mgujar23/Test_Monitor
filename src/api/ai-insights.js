@@ -17,7 +17,7 @@ export function generateAIInsights(dashboardData) {
       estimatedFixTime: 0,
       performanceMetrics: [],
       improvementMilestones: { current: 0, target: 95, progress: 0 },
-      sectionGroupStats: { portal: 0, proxy: 0, reporting: 0 }
+      sectionGroupStats: { portal: 0, proxy: 0, reporting: 0, aws: 0 }
     };
 
     // Calculate overall health metrics
@@ -46,6 +46,7 @@ export function generateAIInsights(dashboardData) {
     const portalSections = ['readyCluster', 'selenium', 'integrationTests', 'smokeTests'];
     const proxySections = ['prxAutoTest'];
     const reportingSections = ['csgServiceReporting', 'cstoreReporting', 'etlSIEM', 'etlSIEMCluster'];
+    const awsSections = ['awsSystemTest', 'awsControl'];
 
     let portalTotal = 0;
     portalSections.forEach(section => {
@@ -65,6 +66,12 @@ export function generateAIInsights(dashboardData) {
       if (data && data.total) reportingTotal += data.total;
     });
 
+    let awsTotal = 0;
+    awsSections.forEach(section => {
+      const data = dashboardData.sections[section];
+      if (data && data.total) awsTotal += data.total;
+    });
+
     // Calculate coverage metrics
     const portalFailedCount = portalSections.reduce((sum, section) => {
       const data = dashboardData.sections[section];
@@ -81,8 +88,13 @@ export function generateAIInsights(dashboardData) {
       return sum + (data?.failed || 0);
     }, 0);
 
-    const totalFailedCount = portalFailedCount + proxyFailedCount + reportingFailedCount;
-    const totalTestsAll = portalTotal + proxyTotal + reportingTotal;
+    const awsFailedCount = awsSections.reduce((sum, section) => {
+      const data = dashboardData.sections[section];
+      return sum + (data?.failed || 0);
+    }, 0);
+
+    const totalFailedCount = portalFailedCount + proxyFailedCount + reportingFailedCount + awsFailedCount;
+    const totalTestsAll = portalTotal + proxyTotal + reportingTotal + awsTotal;
     const overallPassingPercentage = totalTestsAll > 0 ? Math.round(((totalTestsAll - totalFailedCount) / totalTestsAll) * 100) : 100;
 
     // Code Coverage: Estimated based on test count vs expected baseline
@@ -99,10 +111,12 @@ export function generateAIInsights(dashboardData) {
       portal: portalTotal,
       proxy: proxyTotal,
       reporting: reportingTotal,
+      aws: awsTotal,
       total: totalTestsAll,
       portalFailed: portalFailedCount,
       proxyFailed: proxyFailedCount,
       reportingFailed: reportingFailedCount,
+      awsFailed: awsFailedCount,
       totalFailed: totalFailedCount,
       passingPercentage: overallPassingPercentage,
       codeCoverage: codeCoverage,
